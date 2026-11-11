@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "template_id": "petstory-keepsake-v1",
+  "version": "1.0.0",
+  "product_name": "Janzle PetStory Personalized Keepsake Book",
+  "target_page_count": 24,
+  "print_format": {
+    "dimensions_mm": [210, 210],
+    "bleed_mm": 3,
+    "safe_margin_mm": 12,
+    "target_dpi": 300
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "step_id": "pet_type",
+      "type": "single_select",
+      "title": "Who is this story about?",
+      "subtitle": "Choose your furry companion to begin their custom story.",
+      "field_name": "pet_type",
+      "required": true,
+      "options": [
+        { "value": "dog", "label": "A wonderful dog", "icon": "dog-silhouette" },
+        { "value": "cat", "label": "An extraordinary cat", "icon": "cat-silhouette" }
+      ]
+    },
+    {
+      "step_number": 2,
+      "step_id": "book_purpose",
+      "type": "single_select",
+      "title": "I am creating this keepsake for:",
+      "subtitle": "We tailor prompts based on who will treasure this book.",
+      "field_name": "book_purpose",
+      "required": true,
+      "options": [
+        { "value": "myself", "label": "Myself and my family", "description": "A memory keeper for our home." },
+        { "value": "gift", "label": "A gift for someone special", "description": "A personalized surprise for a loved one." }
+      ]
+    },
+    {
+      "step_number": 3,
+      "step_id": "life_stage",
+      "type": "single_select",
+      "title": "Where is your pet on their journey?",
+      "subtitle": "This sets the tone and chapters of the book.",
+      "field_name": "life_stage",
+      "required": true,
+      "options": [
+        { "value": "young", "label": "Puppy / Kitten", "tagline": "The early days, training & first memories" },
+        { "value": "adult", "label": "In Their Prime", "tagline": "Adventures, quirks & daily routines" },
+        { "value": "senior", "label": "Golden Years", "tagline": "Gentle moments & a lifetime of devotion" },
+        { "value": "memorial", "label": "In Loving Memory", "tagline": "A tribute to an eternal companion" }
+      ]
+    },
+    {
+      "step_number": 4,
+      "step_id": "origin_story",
+      "type": "single_select",
+      "title": "How did your journey together begin?",
+      "field_name": "origin_type",
+      "required": true,
+      "options": [
+        { "value": "rescue", "label": "Rescue or Shelter Adoption", "chapter_theme": "The Day You Found Us" },
+        { "value": "breeder", "label": "Chosen from a Breeder / Litter", "chapter_theme": "Bringing You Home" },
+        { "value": "serendipity", "label": "Showed up on our doorstep / Fate", "chapter_theme": "An Unexpected Blessing" },
+        { "value": "family_gift", "label": "Gift from Family / Friend", "chapter_theme": "The Best Surprise" }
+      ]
+    },
+    {
+      "step_number": 5,
+      "step_id": "pet_identity",
+      "type": "form_group",
+      "title": "What should we call your pet in the book?",
+      "subtitle": "These details appear throughout the story chapters and dedication.",
+      "fields": [
+        {
+          "name": "pet_name",
+          "label": "Official Name",
+          "type": "text",
+          "placeholder": "e.g. Barnaby",
+          "max_length": 30,
+          "required": true
+        },
+        {
+          "name": "nicknames",
+          "label": "Favorite Nicknames (comma separated)",
+          "type": "text",
+          "placeholder": "e.g. Barney, Mr. Fluff, Sir Barks",
+          "max_length": 60,
+          "required": false
+        },
+        {
+          "name": "gotcha_date",
+          "label": "Gotcha Day or Birthday",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "breed_description",
+          "label": "Breed or Mix",
+          "type": "text",
+          "placeholder": "e.g. Golden Retriever or Tuxedo Cat",
+          "max_length": 40,
+          "required": false
+        }
+      ]
+    },
+    {
+      "step_number": 6,
+      "step_id": "personality_traits",
+      "type": "multi_select",
+      "title": "Which words best describe their personality?",
+      "subtitle": "Select up to 4 traits. These shape their custom personality spread.",
+      "field_name": "personality_traits",
+      "max_select": 4,
+      "required": true,
+      "options": [
+        { "value": "zoomie_master", "label": "Chaotic Zoomie Champion" },
+        { "value": "couch_potato", "label": "Professional Couch Potato" },
+        { "value": "shadow", "label": "Velcro Shadow (Follows Everywhere)" },
+        { "value": "treat_lawyer", "label": "Treat Negotiator" },
+        { "value": "adventure_seeker", "label": "Brave Explorer" },
+        { "value": "gentle_cuddler", "label": "Gentle Soul & Lap Lover" },
+        { "value": "talker", "label": "Very Vocal & Sassy" },
+        { "value": "guardian", "label": "Loyal Household Protector" }
+      ]
+    },
+    {
+      "step_number": 7,
+      "step_id": "quirks_habits",
+      "type": "multi_select",
+      "title": "What are their signature quirks?",
+      "field_name": "quirks",
+      "max_select": 3,
+      "required": true,
+      "options": [
+        { "value": "head_tilts", "label": "Dramatic head tilts when spoken to" },
+        { "value": "weird_sleep", "label": "Sleeps in impossible contorted positions" },
+        { "value": "toy_hoarder", "label": "Hides favorite toys in secret places" },
+        { "value": "sunbeam_chaser", "label": "Migrates around house following sunbeams" },
+        { "value": "food_alarm", "label": "Acts like they have never been fed in their life" },
+        { "value": "favorite_person", "label": "Stares intensely until petted" }
+      ]
+    },
+    {
+      "step_number": 8,
+      "step_id": "interstitial_value_1",
+      "type": "pacing_screen",
+      "title": "Drafting Chapter 1 & 2...",
+      "subtitle": "We are assembling your pet's personality matrix and origin story.",
+      "social_proof": {
+        "statistic": "10,000+ Keepsakes Created",
+        "testimonial": "\"Seeing Barnaby's nicknames and quirks printed in a real book made our whole family cry happy tears.\"",
+        "author": "Elena M., Verified Pet Parent"
+      },
+      "auto_advance_ms": 3000
+    },
+    {
+      "step_number": 9,
+      "step_id": "owner_identity",
+      "type": "form_group",
+      "title": "Who shares this bond?",
+      "fields": [
+        {
+          "name": "owner_names",
+          "label": "Owner / Family Names",
+          "type": "text",
+          "placeholder": "e.g. Sarah & Mark or The Miller Family",
+          "max_length": 50,
+          "required": true
+        },
+        {
+          "name": "home_city",
+          "label": "Hometown / State",
+          "type": "text",
+          "placeholder": "e.g. Austin, Texas",
+          "max_length": 40,
+          "required": false
+        }
+      ]
+    },
+    {
+      "step_number": 10,
+      "step_id": "dedication_message",
+      "type": "text_area",
+      "title": "Write a message for the dedication page",
+      "subtitle": "This appears on Page 3. You can use our suggested message or write your own.",
+      "field_name": "dedication_text",
+      "default_text": "To our dearest pet, thank you for filling our days with boundless laughter, muddy paws, and unconditional devotion. You turned our house into a home.",
+      "max_length": 350,
+      "required": true
+    },
+    {
+      "step_number": 11,
+      "step_id": "photo_upload",
+      "type": "photo_uploader",
+      "title": "Upload your favorite photos",
+      "subtitle": "Upload 4 to 6 photos for the milestone spreads. Minimum resolution 800x800px.",
+      "field_name": "uploaded_photos",
+      "min_photos": 4,
+      "max_photos": 6,
+      "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
+      "slots": [
+        { "id": "p1", "label": "The Early Days / First Photo", "required": true },
+        { "id": "p2", "label": "Full Personality / Goofy Moment", "required": true },
+        { "id": "p3", "label": "Adventures or Outdoor Fun", "required": true },
+        { "id": "p4", "label": "Cuddles / With Family", "required": true },
+        { "id": "p5", "label": "Sleeping or Cozy Spot", "required": false },
+        { "id": "p6", "label": "Portrait / Best Smile", "required": false }
+      ]
+    },
+    {
+      "step_number": 12,
+      "step_id": "cover_builder",
+      "type": "cover_customizer",
+      "title": "Personalize the book cover",
+      "subtitle": "Select an archival palette and emblem for the front cover.",
+      "palette_field": "palette_id",
+      "icon_field": "icon_id",
+      "color_palettes": [
+        { "id": "sage_meadow", "name": "Sage Meadow (Deep Forest)", "bg_hex": "#2D4F32", "text_hex": "#FFFFFF", "accent_hex": "#A4C9A8", "contrast_ratio": "9.23:1 (AAA)" },
+        { "id": "terracotta", "name": "Warm Terracotta (Deep Rust)", "bg_hex": "#84331C", "text_hex": "#FFFFFF", "accent_hex": "#F4BAAA", "contrast_ratio": "8.50:1 (AAA)" },
+        { "id": "midnight_navy", "name": "Midnight Navy", "bg_hex": "#1E2E3E", "text_hex": "#FFFFFF", "accent_hex": "#9ABDD8", "contrast_ratio": "13.86:1 (AAA)" },
+        { "id": "warm_sand", "name": "Warm Sand", "bg_hex": "#F5EFEB", "text_hex": "#2D2320", "accent_hex": "#8C786E", "contrast_ratio": "13.42:1 (AAA)" },
+        { "id": "dusty_rose", "name": "Dusty Rose (Deep Berry)", "bg_hex": "#732838", "text_hex": "#FFFFFF", "accent_hex": "#E8A8B4", "contrast_ratio": "10.05:1 (AAA)" }
+      ],
+      "icon_options": [
+        { "id": "paw_classic", "name": "Classic Paw Print", "icon": "paw-print" },
+        { "id": "heart_whiskers", "name": "Heart & Whiskers", "icon": "heart-whiskers" },
+        { "id": "adventure_compass", "name": "Adventure Compass", "icon": "compass" },
+        { "id": "crest_star", "name": "Star & Ribbon", "icon": "star-crest" }
+      ]
+    },
+    {
+      "step_number": 13,
+      "step_id": "book_preview",
+      "type": "preview_flipbook",
+      "title": "Review your custom book preview",
+      "subtitle": "Here is how your personalized cover and dedication spread will look.",
+      "cta_label": "Approve & Download My Book ($12.99)",
+      "preview_pages": ["cover", "dedication_spread", "personality_spread"]
+    }
+  ]
+}

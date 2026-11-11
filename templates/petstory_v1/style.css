@@ -1,0 +1,354 @@
+/* ==============================================================================
+   Janzle PetStory - 24-Page Keepsake Book Print Stylesheet
+   Standards: CSS Paged Media / WeasyPrint & Chromium Print Compliant
+   Page Dimensions: 210mm x 210mm (Square Keepsake Format)
+   Margins: 15mm Top/Left/Right, 20mm Bottom (Safe Area: 12mm)
+   WCAG Compliance: All Palette Normal Text Ratios >= 7.0:1 (WCAG AAA)
+   Network Requirement: 100% Offline (Zero External CDNs or Web Fonts)
+   ============================================================================== */
+
+/* --- PAGE SETUP & BREAKS --- */
+@page {
+    size: 210mm 210mm;
+    margin: 0;
+    marks: crop cross;
+    bleed: 3mm;
+}
+
+@page :first {
+    margin: 0;
+    marks: none;
+    bleed: 0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 210mm;
+    height: 210mm;
+    margin: 0;
+    padding: 0;
+    background-color: #FFFFFF;
+    font-family: 'Cabin', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    color: #2D2724;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+/* Page Container - Exactly 210mm x 210mm with Forced Page Break */
+.page {
+    width: 210mm;
+    height: 210mm;
+    max-height: 210mm;
+    overflow: hidden;
+    position: relative;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    padding: 15mm 15mm 20mm 15mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    background-color: #FFFFFF;
+}
+
+/* Page Running Footer */
+.page-footer {
+    position: absolute;
+    bottom: 8mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #7A726D;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* Header Running Title */
+.page-header {
+    position: absolute;
+    top: 6mm;
+    left: 15mm;
+    right: 15mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 6.5pt;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #A89F98;
+    border-bottom: 0.5pt solid #EDE7E1;
+    padding-bottom: 1.5mm;
+}
+
+/* --- VERIFIED WCAG AAA (>= 7.0:1) PALETTES --- */
+/* Sage Meadow: Deep Forest (#2D4F32) + White Text (#FFFFFF) -> 9.23:1 (AAA) */
+.palette-sage_meadow {
+    --cover-bg: #2D4F32;
+    --cover-text: #FFFFFF;
+    --cover-accent: #A4C9A8;
+    --card-accent: #2D4F32;
+}
+
+/* Terracotta: Deep Rust (#84331C) + White Text (#FFFFFF) -> 8.50:1 (AAA) */
+.palette-terracotta {
+    --cover-bg: #84331C;
+    --cover-text: #FFFFFF;
+    --cover-accent: #F4BAAA;
+    --card-accent: #84331C;
+}
+
+/* Midnight Navy: Deep Navy (#1E2E3E) + White Text (#FFFFFF) -> 13.86:1 (AAA) */
+.palette-midnight_navy {
+    --cover-bg: #1E2E3E;
+    --cover-text: #FFFFFF;
+    --cover-accent: #9ABDD8;
+    --card-accent: #1E2E3E;
+}
+
+/* Warm Sand: Pale Sand (#F5EFEB) + Espresso Text (#2D2320) -> 13.42:1 (AAA) */
+.palette-warm_sand {
+    --cover-bg: #F5EFEB;
+    --cover-text: #2D2320;
+    --cover-accent: #8C786E;
+    --card-accent: #8C786E;
+}
+
+/* Dusty Rose: Deep Berry (#732838) + White Text (#FFFFFF) -> 10.05:1 (AAA) */
+.palette-dusty_rose {
+    --cover-bg: #732838;
+    --cover-text: #FFFFFF;
+    --cover-accent: #E8A8B4;
+    --card-accent: #732838;
+}
+
+/* --- COVER PAGE (PAGE 1) --- */
+.cover-page {
+    padding: 0;
+    background-color: var(--cover-bg, #2D4F32);
+    color: var(--cover-text, #FFFFFF);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.cover-border {
+    width: 186mm;
+    height: 186mm;
+    border: 1.5pt solid var(--cover-accent, #A4C9A8);
+    border-radius: 4mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16mm 12mm;
+    text-align: center;
+}
+
+.cover-kicker {
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.cover-title {
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-size: clamp(22pt, 4.5vw, 36pt);
+    line-height: 1.15;
+    font-weight: 700;
+    margin: 6mm 0 3mm 0;
+    letter-spacing: -0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.cover-subtitle {
+    font-size: 10pt;
+    letter-spacing: 0.5px;
+    font-style: italic;
+    opacity: 0.9;
+}
+
+.cover-emblem {
+    width: 26mm;
+    height: 26mm;
+    margin: 6mm 0;
+}
+
+.cover-footer {
+    font-size: 8pt;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+/* --- CHAPTER HEADINGS & PROSE --- */
+h1.chapter-heading {
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-size: 22pt;
+    font-weight: 700;
+    color: #1F1B18;
+    line-height: 1.2;
+    margin: 4mm 0 3mm 0;
+}
+
+.chapter-number {
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    color: #8C827A;
+    display: block;
+}
+
+p.body-prose {
+    font-size: 9.5pt;
+    line-height: 1.6;
+    color: #38322E;
+    margin-bottom: 3.5mm;
+    text-align: justify;
+}
+
+/* --- DEDICATION SPREAD (PAGE 3) --- */
+.dedication-box {
+    margin: auto 0;
+    text-align: center;
+    padding: 8mm 12mm;
+    border-top: 1pt solid #D9D2CB;
+    border-bottom: 1pt solid #D9D2CB;
+}
+
+.dedication-quote {
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-size: 13pt;
+    font-style: italic;
+    line-height: 1.55;
+    color: #2D2724;
+    margin-bottom: 5mm;
+}
+
+.dedication-byline {
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #7A726D;
+}
+
+/* --- PHOTO SPREADS --- */
+.photo-frame-full {
+    width: 100%;
+    height: 118mm;
+    border-radius: 3mm;
+    overflow: hidden;
+    margin: 3mm 0 4mm 0;
+    background-color: #F5F2EF;
+}
+
+.photo-frame-full img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.photo-caption {
+    font-size: 8pt;
+    color: #7A726D;
+    font-style: italic;
+    text-align: center;
+}
+
+.photo-fallback-quote {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 10mm;
+    color: #5A524D;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 13pt;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+/* --- TRAITS & QUIRKS GRIDS --- */
+.traits-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    margin: 4mm 0;
+}
+
+.trait-card {
+    background-color: #F9F7F5;
+    border-left: 3pt solid var(--card-accent, #2D4F32);
+    padding: 3.5mm 4.5mm;
+    border-radius: 2mm;
+}
+
+.trait-title {
+    font-weight: 700;
+    font-size: 9pt;
+    color: #1F1B18;
+    margin-bottom: 1mm;
+}
+
+.trait-desc {
+    font-size: 8pt;
+    color: #5A524D;
+    line-height: 1.35;
+}
+
+/* --- PAW STAMP ZONE (PAGE 19) --- */
+.paw-stamp-zone {
+    width: 100%;
+    height: 95mm;
+    border: 1.5pt dashed #C4BCB5;
+    border-radius: 4mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 5mm 0;
+    background-color: #FAF8F6;
+}
+
+.stamp-instruction {
+    font-size: 8.5pt;
+    color: #8C827A;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+/* --- BACK COVER (PAGE 24) --- */
+.back-cover {
+    padding: 0;
+    background-color: #F7F5F2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.back-colophon {
+    font-size: 7.5pt;
+    color: #8C827A;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    line-height: 1.8;
+}

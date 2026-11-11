@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Janzle PetStory - {{ answers.pet_name | default('My Pet') | e }}</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="palette-{{ answers.palette_id | default('sage_meadow') }}">
+
+    <!-- ==================== PAGE 1: FRONT COVER ==================== -->
+    <div class="page cover-page">
+        <div class="cover-border">
+            <div class="cover-kicker">A Janzle Keepsake Story</div>
+            <div>
+                <h1 class="cover-title">{{ answers.pet_name | default('Our Beloved Companion') | e }}</h1>
+                <div class="cover-subtitle">
+                    {% if answers.life_stage == 'memorial' %}
+                        A Tribute to an Eternal Companion
+                    {% elif answers.life_stage == 'young' %}
+                        The First Chapter of a Wonderful Journey
+                    {% else %}
+                        The Story of an Extraordinary Companion
+                    {% endif %}
+                </div>
+                <div class="cover-emblem">
+                    {% if answers.icon_id == 'heart_whiskers' %}
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 82 C20 60 10 40 10 25 C10 12 22 5 35 5 C43 5 48 10 50 14 C52 10 57 5 65 5 C78 5 90 12 90 25 C90 40 80 60 50 82 Z" stroke="currentColor" stroke-width="2.5"/>
+                        <path d="M30 45 L15 42 M30 50 L12 50 M30 55 L16 58 M70 45 L85 42 M70 50 L88 50 M70 55 L84 58" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    {% elif answers.icon_id == 'adventure_compass' %}
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="44" stroke="currentColor" stroke-width="2.5"/>
+                        <polygon points="50,16 58,45 50,40 42,45" fill="currentColor"/>
+                        <polygon points="50,84 58,55 50,60 42,55" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    </svg>
+                    {% elif answers.icon_id == 'crest_star' %}
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="2.5"/>
+                        <polygon points="50,20 57,38 76,40 61,53 66,72 50,61 34,72 39,53 24,40 43,38" fill="currentColor"/>
+                    </svg>
+                    {% else %}
+                    <!-- Classic Paw Print -->
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2"/>
+                        <ellipse cx="36" cy="38" rx="6" ry="8" fill="currentColor"/>
+                        <ellipse cx="64" cy="38" rx="6" ry="8" fill="currentColor"/>
+                        <ellipse cx="25" cy="54" rx="5" ry="7" fill="currentColor"/>
+                        <ellipse cx="75" cy="54" rx="5" ry="7" fill="currentColor"/>
+                        <path d="M50 48 C38 48 30 60 36 74 C40 80 60 80 64 74 C70 60 62 48 50 48 Z" fill="currentColor"/>
+                    </svg>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="cover-footer">Dedicated with Love by {{ answers.owner_names | default('Your Family') | e }}</div>
+        </div>
+    </div>
+
+    <!-- ==================== PAGE 2: TITLE & CERTIFICATE ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Official Keepsake Record</span><span>Janzle Keepsake Library</span></div>
+        <div style="text-align: center; margin: auto 0; padding: 4mm;">
+            <span class="chapter-number">Certificate of Companionship</span>
+            <h1 class="chapter-heading" style="font-size: 20pt;">An Eternal Bond</h1>
+            <p class="body-prose" style="text-align: center; max-width: 140mm; margin: 3mm auto 6mm auto;">
+                Let it be known to all that from this day forward, <strong>{{ answers.pet_name | default('Our Companion') | e }}</strong>
+                {% if answers.nicknames %}(fondly answering to {{ answers.nicknames | e }}){% endif %}
+                {% if answers.breed_description %}, a magnificent {{ answers.breed_description | e }},{% endif %}
+                holds the permanent title of Best Companion, Heart-Healer, and Loyal Friend.
+            </p>
+            <div style="border-top: 1pt solid #D9D2CB; width: 60mm; margin: 6mm auto 2mm auto;"></div>
+            <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 1.5px; color: #8C827A;">
+                Gotcha Day: {{ answers.gotcha_date | default('A Day Blessed by Fate') }}
+                {% if answers.home_city %} &bull; {{ answers.home_city | e }}{% endif %}
+            </div>
+        </div>
+        <div class="page-footer">Page 2 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 3: DEDICATION SPREAD ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Dedication</span><span>Forever in Our Hearts</span></div>
+        <div class="dedication-box">
+            <p class="dedication-quote">
+                “{{ answers.dedication_text | default('To our sweetest pet, thank you for filling our days with boundless laughter, soft cuddles, and unconditional devotion. You turned our house into a home.') | e }}”
+            </p>
+            <div class="dedication-byline">— With all our love, {{ answers.owner_names | default('Your Family') | e }}</div>
+        </div>
+        <div class="page-footer">Page 3 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 4: CHAPTER 1 - ORIGIN STORY ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Chapter One</span><span>The Beginning</span></div>
+        <span class="chapter-number">Chapter One</span>
+        <h1 class="chapter-heading">
+            {% if answers.origin_type == 'rescue' %}
+                The Day You Found Us
+            {% elif answers.origin_type == 'breeder' %}
+                Bringing You Home
+            {% elif answers.origin_type == 'serendipity' %}
+                An Unexpected Blessing
+            {% else %}
+                The Greatest Gift
+            {% endif %}
+        </h1>
+        <p class="body-prose">
+            {% if answers.origin_type == 'rescue' %}
+                Of all the paths in this wide world, yours led directly to ours. The moment our eyes met at the shelter, behind all the uncertainty, we saw a gentle soul waiting to be loved. You were not just adopted; you chose us.
+            {% elif answers.origin_type == 'breeder' %}
+                We counted down the weeks until the day we could finally bring you home. Out of the whole playful litter, you were the one whose spirit called to ours. That first journey home in our arms was the beginning of everything.
+            {% elif answers.origin_type == 'serendipity' %}
+                You arrived like a twist of fate—unexpected, unannounced, and exactly when our lives needed you most. Whether stepping onto our porch or crossing our path, you claimed our hearts before we even knew your name.
+            {% else %}
+                You arrived as a loving surprise, a gift that immediately became the center of our household. From your very first tentative steps across the threshold, our world became infinitely brighter.
+            {% endif %}
+        </p>
+        <p class="body-prose">
+            You inspected every doorway, claimed your favorite cushion, and with a quiet sigh of relief, let us know that your search was over. You were home.
+        </p>
+        <div class="page-footer">Page 4 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 5: PHOTO SPREAD 1 ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Photo Archive</span><span>First Memories</span></div>
+        <span class="chapter-number">Archive Spread One</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">The Early Days</h1>
+        <div class="photo-frame-full">
+            {% if photos.p1 %}
+                <img src="{{ photos.p1 }}" alt="The Early Days">
+            {% else %}
+                <div class="photo-fallback-quote">
+                    “You stepped into our home, and suddenly every room had warmth.”
+                </div>
+            {% endif %}
+        </div>
+        <div class="photo-caption">The unforgettable beginning of our life with {{ answers.pet_name | default('our companion') | e }}.</div>
+        <div class="page-footer">Page 5 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 6: PERSONALITY MATRIX ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Personality Matrix</span><span>Defining Hallmarks</span></div>
+        <span class="chapter-number">Personality Profile</span>
+        <h1 class="chapter-heading">The Spirit of {{ answers.pet_name | default('Our Pet') | e }}</h1>
+        <p class="body-prose">
+            No two souls are alike. Your daily habits, gentle moments, and bursts of pure energy make you completely unmistakable:
+        </p>
+        <div class="traits-grid">
+            {% if answers.personality_traits and answers.personality_traits | length > 0 %}
+                {% for trait in answers.personality_traits %}
+                <div class="trait-card">
+                    <div class="trait-title">{{ trait | replace('_', ' ') | title }}</div>
+                    <div class="trait-desc">A defining hallmark that brings warmth and character to our home every single day.</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="trait-card"><div class="trait-title">Gentle Soul</div><div class="trait-desc">A quiet, loving presence that soothes every weary heart.</div></div>
+                <div class="trait-card"><div class="trait-title">Loyal Guardian</div><div class="trait-desc">Steadfast devotion that never wavers through all seasons.</div></div>
+                <div class="trait-card"><div class="trait-title">Playful Spirit</div><div class="trait-desc">Finding endless wonder in the simplest toys and daily rituals.</div></div>
+                <div class="trait-card"><div class="trait-title">Cuddle Champion</div><div class="trait-desc">Always finding the closest spot beside the people you love.</div></div>
+            {% endif %}
+        </div>
+        <div class="page-footer">Page 6 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 7: CHAPTER 2 - DAILY ADVENTURES ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Chapter Two</span><span>Daily Adventures</span></div>
+        <span class="chapter-number">Chapter Two</span>
+        <h1 class="chapter-heading">Rhythms & Rituals</h1>
+        <p class="body-prose">
+            {% if answers.pet_type == 'cat' %}
+                Life with {{ answers.pet_name | default('our cat') | e }} is measured in quiet sunbeam migrations, soft rhythmic purrs, and the dramatic twilight sprint down the hallway. You reign over your domain with regal poise and mischievous curiosity.
+            {% else %}
+                Life with {{ answers.pet_name | default('our dog') | e }} is defined by enthusiastic tail wags, eager paws dancing by the door, and the unbridled joy of outdoor adventures. Every walk is an epic expedition, every stick a grand prize.
+            {% endif %}
+        </p>
+        <p class="body-prose">
+            You remind us that true contentment requires very little: a wholesome meal, a peaceful patch of sunlight, and the presence of the people who love you.
+        </p>
+        <div class="page-footer">Page 7 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 8: PHOTO SPREAD 2 ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Photo Archive</span><span>Unfiltered Joy</span></div>
+        <span class="chapter-number">Archive Spread Two</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">Caught in the Act</h1>
+        <div class="photo-frame-full">
+            {% if photos.p2 %}
+                <img src="{{ photos.p2 }}" alt="Caught in the Act">
+            {% else %}
+                <div class="photo-fallback-quote">
+                    “Never a quiet moment, and we wouldn’t have it any other way.”
+                </div>
+            {% endif %}
+        </div>
+        <div class="photo-caption">Pure personality captured in a single frame.</div>
+        <div class="page-footer">Page 8 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 9: QUIRKS & HABITS ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Signature Quirks</span><span>The Little Things</span></div>
+        <span class="chapter-number">Habits & Quirks</span>
+        <h1 class="chapter-heading">The Quirky Genius</h1>
+        <p class="body-prose">
+            The idiosyncratic rituals that make {{ answers.pet_name | default('our pet') | e }} an irreplaceable member of our family:
+        </p>
+        <div class="traits-grid">
+            {% if answers.quirks and answers.quirks | length > 0 %}
+                {% for q in answers.quirks %}
+                <div class="trait-card">
+                    <div class="trait-title">{{ q | replace('_', ' ') | title }}</div>
+                    <div class="trait-desc">An endearing daily habit that never fails to spark laughter and affection.</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="trait-card"><div class="trait-title">Expressive Gazes</div><div class="trait-desc">Head tilts and knowing eyes that communicate without speaking.</div></div>
+                <div class="trait-card"><div class="trait-title">Cozy Napping Habits</div><div class="trait-desc">An uncanny ability to claim the absolute softest blanket in the room.</div></div>
+            {% endif %}
+        </div>
+        <div class="page-footer">Page 9 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 10: PHOTO SPREAD 3 ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Photo Archive</span><span>Quiet Moments</span></div>
+        <span class="chapter-number">Archive Spread Three</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">Peaceful Serenity</h1>
+        <div class="photo-frame-full">
+            {% if photos.p3 %}
+                <img src="{{ photos.p3 }}" alt="Peaceful Moments">
+            {% else %}
+                <div class="photo-fallback-quote">
+                    “The world slows down whenever you curl up beside us.”
+                </div>
+            {% endif %}
+        </div>
+        <div class="photo-caption">Recharging after a busy day of spreading happiness.</div>
+        <div class="page-footer">Page 10 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 11: CHAPTER 3 - MILESTONES ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Chapter Three</span><span>Milestones & Growth</span></div>
+        <span class="chapter-number">Chapter Three</span>
+        <h1 class="chapter-heading">Milestones Along the Way</h1>
+        <p class="body-prose">
+            {% if answers.life_stage == 'memorial' %}
+                Looking back across the arc of your life, we celebrate the countless milestones that shaped our years together. The first holiday where you unwrap gifts with boundless enthusiasm. Brave visits to the vet where you earned badges of courage.
+            {% elif answers.life_stage == 'young' %}
+                Every week brings a brand-new triumph: mastering the household rules, discovering that reflections in mirrors are harmless, and learning the sacred schedule of mealtimes. You are growing in confidence with every sunrise.
+            {% else %}
+                Together we have navigated seasons of change. Through house moves, long road trips, quiet winters, and bright summer afternoons, you remained our joyful companion and steady anchor.
+            {% endif %}
+        </p>
+        <p class="body-prose">
+            Through every chapter, your devotion has been the steady compass of our home.
+        </p>
+        <div class="page-footer">Page 11 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 12: FAMILY & BONDS ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Companionship</span><span>Family Ties</span></div>
+        <span class="chapter-number">The Inner Circle</span>
+        <h1 class="chapter-heading">The Heart of Our Pack</h1>
+        <p class="body-prose">
+            In our household, love does not need an interpreter. You know our voices before we enter the room. You comfort us when sorrow visits, and you magnify our celebrations tenfold.
+        </p>
+        <p class="body-prose">
+            To {{ answers.owner_names | default('your family') | e }}, you are not just a pet—you are a keeper of our secrets, a partner in our quietest routines, and the gentlest soul we have ever known.
+        </p>
+        <div class="page-footer">Page 12 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 13: PHOTO SPREAD 4 ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Photo Archive</span><span>Family Connection</span></div>
+        <span class="chapter-number">Archive Spread Four</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">Together with Family</h1>
+        <div class="photo-frame-full">
+            {% if photos.p4 %}
+                <img src="{{ photos.p4 }}" alt="Family Bond">
+            {% else %}
+                <div class="photo-fallback-quote">
+                    “Surrounded by the humans who cherish you beyond measure.”
+                </div>
+            {% endif %}
+        </div>
+        <div class="photo-caption">The warmth of companionship shared with {{ answers.owner_names | default('our family') | e }}.</div>
+        <div class="page-footer">Page 13 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 14: HUMOROUS TIMELINE ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Daily Chronicles</span><span>A Day in the Life</span></div>
+        <span class="chapter-number">Daily Chronicles</span>
+        <h1 class="chapter-heading">A Day with {{ answers.pet_name | default('Our Pet') | e }}</h1>
+        <p class="body-prose">
+            <strong>07:00 AM:</strong> 
+            {% if answers.pet_type == 'cat' %}Stepping gently across sleeping human's face (breakfast summons).{% else %}Enthusiastic cold-nose alarm clock and tail thumps against the floor.{% endif %}<br>
+            <strong>09:30 AM:</strong> Perimeter inspection of the living room and window vantage points.<br>
+            <strong>12:00 PM:</strong> Mandatory supervision of kitchen food-prep activities.<br>
+            <strong>02:30 PM:</strong> Strategic sunbeam migration and championship-level deep sleep.<br>
+            <strong>06:00 PM:</strong> Unrestrained celebration as humans return home.<br>
+            <strong>09:00 PM:</strong> Claiming the prime center territory on the couch.
+        </p>
+        <div class="page-footer">Page 14 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 15: PHOTO SPREAD 5 ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Photo Archive</span><span>Outdoor Moments</span></div>
+        <span class="chapter-number">Archive Spread Five</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">Adventures & Exploration</h1>
+        <div class="photo-frame-full">
+            {% if photos.p5 %}
+                <img src="{{ photos.p5 }}" alt="Outdoors">
+            {% else %}
+                <!-- Safe Fallback: Typographic Reflection Container -->
+                <div class="photo-fallback-quote">
+                    “Exploring the wide world with boundless wonder in your eyes.”
+                </div>
+            {% endif %}
+        </div>
+        <div class="photo-caption">Ears perked, nose in the breeze, exploring the great outdoors.</div>
+        <div class="page-footer">Page 15 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 16: REFLECTIONS & LESSONS ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Reflections</span><span>Life Lessons</span></div>
+        <span class="chapter-number">Life Lessons</span>
+        <h1 class="chapter-heading">What You Taught Us</h1>
+        <p class="body-prose">
+            You taught us that a walk is never just about exercise—it is about greeting the world with fresh curiosity. You taught us that naps are non-negotiable, snacks are worth celebrating, and forgiveness is instantaneous.
+        </p>
+        <p class="body-prose">
+            Above all, you showed us that love requires no grand declarations. It is expressed in the quiet weight of your head resting upon our knee at the close of an exhausting day.
+        </p>
+        <div class="page-footer">Page 16 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 17: PHOTO SPREAD 6 ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Photo Archive</span><span>Cherished Moments</span></div>
+        <span class="chapter-number">Archive Spread Six</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">Unforgettable Moments</h1>
+        <div class="photo-frame-full">
+            {% if photos.p6 %}
+                <img src="{{ photos.p6 }}" alt="Unforgettable Moments">
+            {% else %}
+                <!-- Safe Fallback: Typographic Reflection Container -->
+                <div class="photo-fallback-quote">
+                    “Every quiet moment with you became a memory we hold forever.”
+                </div>
+            {% endif %}
+        </div>
+        <div class="photo-caption">Moments frozen in time, treasured for a lifetime.</div>
+        <div class="page-footer">Page 17 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 18: LETTER FROM HUMAN ==================== -->
+    <div class="page">
+        <div class="page-header"><span>A Letter to You</span><span>From the Heart</span></div>
+        <span class="chapter-number">Words of Devotion</span>
+        <h1 class="chapter-heading">Dear {{ answers.pet_name | default('Beloved Friend') | e }}</h1>
+        <p class="body-prose">
+            If love alone could have granted you the gift of eternity, you would outlive the stars in the night sky. You brought peace into our frantic hours, unbridled joy to our mornings, and unconditional companionship to our lives.
+        </p>
+        <p class="body-prose">
+            Whatever seasons lie ahead, know this without doubt: you are fiercely cherished, forever honored, and eternally held in our deepest love.
+        </p>
+        <div class="page-footer">Page 18 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 19: PAW PRINT ARCHIVE ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Keepsake Mark</span><span>Archival Seal</span></div>
+        <span class="chapter-number">Physical Keepsake</span>
+        <h1 class="chapter-heading">The Archival Paw Stamp</h1>
+        <p class="body-prose" style="font-size: 8.5pt;">
+            Affix an ink impression of {{ answers.pet_name | default('your companion') | e }}'s paw within the archival boundary below to permanently seal this commemorative book.
+        </p>
+        <div class="paw-stamp-zone">
+            <div class="stamp-instruction">[ Affix Paw Print Impression Here ]</div>
+        </div>
+        <div class="page-footer">Page 19 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 20: FOREVER FAVORITES ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Favorites Registry</span><span>Loves of a Good Life</span></div>
+        <span class="chapter-number">Registry of Loves</span>
+        <h1 class="chapter-heading">Forever Favorites</h1>
+        <p class="body-prose">
+            <strong>Favorite Human:</strong> {{ answers.owner_names | default('The whole family') | e }}<br>
+            <strong>Favorite Spot:</strong> Exactly in the center of the bed or sunlit rug<br>
+            <strong>Favorite Activity:</strong> {% if answers.pet_type == 'cat' %}Watching birds through the window and midnight zoomies{% else %}Exploring the walking trail and chasing favorite balls{% endif %}<br>
+            <strong>Secret Superpower:</strong> Making every difficult day melt away with a single look<br>
+            <strong>Greatest Achievement:</strong> Becoming the irreplaceable center of our home
+        </p>
+        <div class="page-footer">Page 20 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 21: CLOSING REFLECTION ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Reflection</span><span>The Final Chapter</span></div>
+        <div style="text-align: center; margin: auto 0; padding: 6mm 10mm;">
+            <p style="font-family: 'Playfair Display', Georgia, serif; font-size: 14pt; line-height: 1.6; font-style: italic; color: #2D2724;">
+                {% if answers.life_stage == 'memorial' %}
+                    “Those we have held in our arms for a little while, we hold in our hearts forever.”
+                {% else %}
+                    “Animals know how to love unconditionally from their very first breath; humans spend a lifetime learning how to love like them.”
+                {% endif %}
+            </p>
+            <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 2px; color: #8C827A; margin-top: 6mm;">
+                Forever Our Companion
+            </div>
+        </div>
+        <div class="page-footer">Page 21 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 22: CANDID PHOTO GALLERY ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Candid Gallery</span><span>Snapshots of Life</span></div>
+        <span class="chapter-number">Candid Gallery</span>
+        <h1 class="chapter-heading" style="font-size: 16pt;">A Life Beautifully Lived</h1>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm; margin-top: 4mm;">
+            <div style="height: 52mm; background: #F5F2EF; border-radius: 2mm; overflow: hidden;">
+                {% if photos.p1 %}<img src="{{ photos.p1 }}" style="width: 100%; height: 100%; object-fit: cover;">{% endif %}
+            </div>
+            <div style="height: 52mm; background: #F5F2EF; border-radius: 2mm; overflow: hidden;">
+                {% if photos.p2 %}<img src="{{ photos.p2 }}" style="width: 100%; height: 100%; object-fit: cover;">{% endif %}
+            </div>
+            <div style="height: 52mm; background: #F5F2EF; border-radius: 2mm; overflow: hidden;">
+                {% if photos.p3 %}<img src="{{ photos.p3 }}" style="width: 100%; height: 100%; object-fit: cover;">{% endif %}
+            </div>
+            <div style="height: 52mm; background: #F5F2EF; border-radius: 2mm; overflow: hidden;">
+                {% if photos.p4 %}<img src="{{ photos.p4 }}" style="width: 100%; height: 100%; object-fit: cover;">{% endif %}
+            </div>
+        </div>
+        <div class="page-footer">Page 22 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 23: ARCHIVAL COLOPHON ==================== -->
+    <div class="page">
+        <div class="page-header"><span>Archival Record</span><span>Colophon</span></div>
+        <div style="margin-top: auto; padding: 8mm 0; border-top: 1pt solid #E3DDD7;">
+            <div style="font-size: 7.5pt; text-transform: uppercase; letter-spacing: 1.5px; color: #8C827A; line-height: 1.8;">
+                Janzle Creative Commerce Factory &bull; Subsystem M13<br>
+                Archival Keepsake Edition No. 1<br>
+                Compiled for {{ answers.pet_name | default('Our Companion') | e }} &bull; Format: 210mm x 210mm Square<br>
+                Rendered with Jinja2 & CSS Paged Media &bull; All Rights Reserved
+            </div>
+        </div>
+        <div class="page-footer">Page 23 of 24</div>
+    </div>
+
+    <!-- ==================== PAGE 24: BACK COVER ==================== -->
+    <div class="page back-cover">
+        <div style="width: 20mm; height: 20mm; margin-bottom: 5mm; opacity: 0.85;">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" stroke="#2D4F32" stroke-width="2.5"/>
+                <path d="M50 35 L54 45 L65 46 L57 53 L59 64 L50 58 L41 64 L43 53 L35 46 L46 45 Z" fill="#2D4F32"/>
+            </svg>
+        </div>
+        <div class="back-colophon">
+            Janzle PetStory Keepsake Library<br>
+            A Permanent Record of Companionship & Love<br>
+            janzle.com
+        </div>
+    </div>
+
+</body>
+</html>
