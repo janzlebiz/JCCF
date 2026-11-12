@@ -2,15 +2,17 @@
 -- Migration Rollback: 20261112_001_personalization_engine_rollback.sql
 -- Target Subsystem: Module M13 (Interactive Personalization Engine)
 -- Execution Mode: Manual Staging Rollback Plan (NOT RUN - PHASE 1 BLOCKED)
--- Safety Contract: Dependency-Safe.
+-- Safety Contract: Dependency-Safe Restrictive Rollback.
 --                  1. Drops M13 RLS policies explicitly.
 --                  2. Drops M13 automated updated_at triggers explicitly.
---                  3. Explicitly drops foreign key constraints before dropping tables,
---                     avoiding unintended CASCADE side-effects on platform tables.
---                  4. Drops M13 tables (RESTRICT mode).
---                  5. Inspects pg_catalog dependencies (pg_depend, pg_trigger, pg_proc)
---                     to preserve public.set_current_timestamp_updated_at() if any
---                     database object still references it.
+--                  3. Explicitly drops foreign key constraints from M13 tables.
+--                  4. Drops M13 tables using RESTRICT (RESTRICTIVE DROP).
+--                     Zero CASCADE statements used on tables. Any unexpected external
+--                     database dependency or foreign key will cause PostgreSQL to abort
+--                     the transaction cleanly, preventing unintended side-effects.
+--                  5. Inspects pg_catalog (pg_proc, pg_trigger) to preserve
+--                     public.set_current_timestamp_updated_at() if any non-internal
+--                     trigger references its procedure OID.
 -- ==============================================================================
 
 BEGIN;
@@ -26,8 +28,7 @@ DROP TRIGGER IF EXISTS trg_personalization_templates_updated_at ON public.person
 DROP TRIGGER IF EXISTS trg_customization_sessions_updated_at ON public.customization_sessions;
 DROP TRIGGER IF EXISTS trg_order_customizations_updated_at ON public.order_customizations;
 
--- 3. Explicitly Drop Inter-Table & Outbound Foreign Key Constraints
--- (Prevents CASCADE from accidentally touching unexpected external table dependencies)
+-- 3. Explicitly Drop Known Inter-Table & Outbound Foreign Key Constraints
 ALTER TABLE IF EXISTS public.order_customizations 
     DROP CONSTRAINT IF EXISTS fk_order_customizations_order;
 
@@ -40,16 +41,17 @@ ALTER TABLE IF EXISTS public.customization_sessions
 ALTER TABLE IF EXISTS public.personalization_templates 
     DROP CONSTRAINT IF EXISTS fk_personalization_templates_product;
 
--- 4. Drop M13 Tables in Strict Reverse Dependency Order
--- Note: CASCADE is applied to drop any surviving internal indexes or view dependencies,
--- with external table foreign keys already cleanly detached above.
-DROP TABLE IF EXISTS public.order_customizations CASCADE;
-DROP TABLE IF EXISTS public.customization_sessions CASCADE;
-DROP TABLE IF EXISTS public.personalization_templates CASCADE;
+-- 4. Drop M13 Tables in Strict Reverse Dependency Order (RESTRICTIVE DROPS ONLY)
+-- Replaced all DROP TABLE ... CASCADE with RESTRICT.
+-- If any unexpected external view, table, or constraint depends on these tables,
+-- PostgreSQL will halt and roll back the transaction immediately without data loss.
+DROP TABLE IF EXISTS public.order_customizations RESTRICT;
+DROP TABLE IF EXISTS public.customization_sessions RESTRICT;
+DROP TABLE IF EXISTS public.personalization_templates RESTRICT;
 
 -- 5. Robust Dependency-Safe Function Cleanup via pg_catalog
--- Inspect pg_depend and pg_trigger to guarantee the shared function is NEVER dropped
--- if any active trigger or dependent object references its OID.
+-- Inspect pg_proc and pg_trigger to guarantee the shared function is NEVER dropped
+-- if any active trigger across the database references its procedure OID.
 DO $$
 DECLARE
     v_proc_oid OID;
@@ -63,14 +65,14 @@ BEGIN
       AND p.proname = 'set_current_timestamp_updated_at';
 
     IF v_proc_oid IS NOT NULL THEN
-        -- Count all triggers in the catalog referencing this procedure OID
+        -- Count all non-internal triggers in pg_catalog referencing this procedure OID
         SELECT COUNT(*) INTO v_active_dep_count
         FROM pg_trigger t
         WHERE t.tgfoid = v_proc_oid
           AND NOT t.tgisinternal;
 
         IF v_active_dep_count = 0 THEN
-            EXECUTE 'DROP FUNCTION public.set_current_timestamp_updated_at()';
+            EXECUTE 'DROP FUNCTION public.set_current_timestamp_updated_at() RESTRICT';
             RAISE NOTICE 'Function public.set_current_timestamp_updated_at() had 0 active trigger dependencies in pg_catalog and was safely dropped.';
         ELSE
             RAISE NOTICE 'Function public.set_current_timestamp_updated_at() is referenced by % active trigger(s) in pg_catalog; preserving function.', v_active_dep_count;

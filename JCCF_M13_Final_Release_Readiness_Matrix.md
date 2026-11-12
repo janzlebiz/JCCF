@@ -72,9 +72,9 @@ PRICING & VOLUME PARAMETERS:
 | **Variable Storage & Bandwidth** | Egress & Retained PDF Overages | -\$1.00 USD | `[ASSUMPTION]` CDN Mitigated |
 | **Refund Allowance Reserve** | Estimated 2% refund rate (10 units) | -\$129.90 USD | `[ASSUMPTION]` Customer Dispute Buffer |
 | **Non-Refundable Gateway Fees on Refunds** | 10 refunds @ retained gateway rate | -\$11.50 USD | `[ASSUMPTION]` MoR Retained Fees |
-| **Estimated Operating Contribution (EOC)**| **Gross less MoR Fees, Fixed Infra, Refunds**| **\$5,620.42 USD** | `[RECOMMENDATION]` **86.53% Contribution Margin** |
+| **Estimated Operating Contribution (EOC)**| **Gross less MoR Fees, Refund Adjustment, Payout Fee, Infra**| **\$5,644.61 USD** | `[RECOMMENDATION]` **86.91% Contribution Margin** |
 
-* `[CRITICAL FINANCIAL DISTINCTION]`: The **$5,620.42 USD** monthly figure is an **Estimated Operating Contribution (EOC)** prior to domestic Philippine taxes and bank FX conversion spreads. Exact formula: $\$6,495.00 - \$324.75 - \$250.00 - \$48.71 - \$58.72 - \$51.00 - \$141.40 = \$5,620.42$.
+* `[CRITICAL FINANCIAL DISTINCTION]`: The **$5,644.61 USD** monthly figure is an **Estimated Operating Contribution (EOC)** prior to domestic Philippine taxes and bank FX conversion spreads. Exact formula: Gross ($6,495.00) - Initial MoR Fees ($623.46) - Net Refund Payout Adjustment ($118.40) - Bank Payout Fee ($57.53 on $5,753.14 payout pool) - Fixed Infra ($51.00) = **$5,644.61 USD**. Platform fees on refunded orders are not double-counted.
 * `[OPERATOR OBLIGATIONS]`:
   - **Philippine Taxation:** Bureau of Internal Revenue (BIR) taxes (12% VAT or 1%–3% percentage tax, plus annual income tax) are operator liabilities settled directly with the Philippine government.
   - **Bank FX Conversion:** Local bank foreign exchange spreads (USD to PHP) reduce net converted pesos by approximately 1.5% to 2.5% upon local withdrawal.
