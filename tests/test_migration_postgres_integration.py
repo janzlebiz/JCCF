@@ -163,6 +163,7 @@ class PostgresIntegrationRunner:
 
             # Execute scenario test
             status, details, excerpt = test_fn(s_conn)
+            print(f"[{status}] {test_id}: {scenario_name} -> {details}")
             return IntegrationResult(
                 test_id=test_id,
                 scenario_name=scenario_name,
@@ -171,6 +172,7 @@ class PostgresIntegrationRunner:
                 output_excerpt=excerpt
             )
         except Exception as e:
+            print(f"[FAIL] {test_id}: {scenario_name} -> Harness error: {e}")
             return IntegrationResult(
                 test_id=test_id,
                 scenario_name=scenario_name,
@@ -730,24 +732,23 @@ class PostgresIntegrationRunner:
             cur = conn.cursor()
             
             # Temporarily rename service_role if possible, or execute the role guard query simulating absence
-            cur.execute("""
-                DO $$
-                DECLARE
-                    v_missing_roles TEXT[];
-                BEGIN
-                    SELECT array_agg(r.req_role)
-                    INTO v_missing_roles
-                    FROM (VALUES ('anon'), ('authenticated'), ('non_existent_role_test')) AS r(req_role)
-                    WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r.req_role);
-
-                    IF v_missing_roles IS NOT NULL AND array_length(v_missing_roles, 1) > 0 THEN
-                        RAISE EXCEPTION 'M13 Preflight Failed: Required Supabase role(s) % do not exist. Aborting migration before schema mutation.', 
-                            array_to_string(v_missing_roles, ', ');
-                    END IF;
-                END $$;
-            """)
             try:
-                cur.execute("SELECT 1;")
+                cur.execute("""
+                    DO $$
+                    DECLARE
+                        v_missing_roles TEXT[];
+                    BEGIN
+                        SELECT array_agg(r.req_role)
+                        INTO v_missing_roles
+                        FROM (VALUES ('anon'), ('authenticated'), ('non_existent_role_test')) AS r(req_role)
+                        WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r.req_role);
+
+                        IF v_missing_roles IS NOT NULL AND array_length(v_missing_roles, 1) > 0 THEN
+                            RAISE EXCEPTION 'M13 Preflight Failed: Required Supabase role(s) % do not exist. Aborting migration before schema mutation.', 
+                                array_to_string(v_missing_roles, ', ');
+                        END IF;
+                    END $$;
+                """)
                 return "FAIL", "Missing role guard did not raise exception", "Expected abort"
             except Exception as e:
                 conn.rollback()
