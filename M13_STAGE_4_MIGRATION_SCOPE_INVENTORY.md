@@ -1,12 +1,12 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Migration Scope Inventory (Remediated v3.0)
+# Subsystem M13 Stage 4: Migration Scope Inventory (Remediated v4.0)
 
 **Document ID:** `JCCF-M13-STAGE-4-SCOPE-INV`  
-**Version:** 3.0 (Post-Review Reconciliation)  
-**Date:** 13 November 2026 (2026-11-13T02:06:00+08:00)  
+**Version:** 4.0 (Final Targeted Refinements Baseline — F6 & F7 Resolved)  
+**Date:** 13 November 2026 (2026-11-13T02:18:00+08:00)  
 **Status:** REFERENCE INVENTORY — EXECUTION STRICTLY PROHIBITED  
 **Migration Artifact:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`)  
-**Rollback Artifact:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `33911582CB3FCD893A4286D71AB28CAEECEE1B56696EA840DE59A184BD5B4BD4`)  
+**Rollback Artifact:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4`)  
 
 ---
 
@@ -111,8 +111,8 @@
 1. **Destructive Operations in Migration:**
    - Zero `DROP` or `TRUNCATE` statements exist in forward migration.
    - Privileges explicitly revoked from `anon` and `authenticated` on `customization_sessions` and `order_customizations` to enforce security boundary.
-2. **Rollback Ownership Safety (F1 & F2 Reconciled):**
+2. **Rollback Ownership Safety (F1 & F6 Reconciled):**
    - Triggers verified against procedure OID of `m13_set_updated_at()` AND function existence before dropping; aborts safely on clash or missing function.
-   - Policies verified against M13 command, exact role arrays, and qualifiers before dropping; aborts safely on clash or altered roles.
+   - Policies verified against M13 command, exact normalized role sets (`array_agg(r ORDER BY r)`), and qualifiers before dropping; aborts safely on clash, missing roles, or additional roles.
    - All tables dropped via `DROP TABLE ... RESTRICT` (0 `CASCADE`).
    - Function `public.m13_set_updated_at()` dropped via `RESTRICT` only after confirming zero external trigger dependencies.

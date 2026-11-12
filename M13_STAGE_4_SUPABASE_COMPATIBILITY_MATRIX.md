@@ -1,9 +1,9 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Supabase Specific Compatibility Matrix (Remediated v3.0)
+# Subsystem M13 Stage 4: Supabase Specific Compatibility Matrix (Remediated v4.0)
 
 **Document ID:** `JCCF-M13-STAGE-4-SUPABASE-MATRIX`  
-**Version:** 3.0 (Post-Review Reconciliation)  
-**Date:** 13 November 2026 (2026-11-13T02:06:00+08:00)  
+**Version:** 4.0 (Final Targeted Refinements Baseline — F6 & F7 Resolved)  
+**Date:** 13 November 2026 (2026-11-13T02:18:00+08:00)  
 **Status:** EVIDENCE EVALUATION — EXECUTION STRICTLY PROHIBITED  
 **Target Platform:** Supabase Hosted PostgreSQL 15+  
 **Target Migration:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`)  
@@ -22,7 +22,7 @@
 | **PostgreSQL Extensions** | Dependency on optional extensions | PostgreSQL core capabilities preferred over external extensions. | Migration requires native `gen_random_uuid()` (PG 13+ standard). Does NOT require or create `pgcrypto` or `uuid-ossp`. | **VERIFIED ON PG 15 CONTAINER** | Clean PG 15 Alpine container executes migration without creating extensions. |
 | **Foreign Key Pre-requisites** | `products` and `orders` platform tables | May or may not exist in staging if platform tables are migrated in separate phases. | Inbound FKs are created conditionally: checks `information_schema.tables` for `public.products` and `public.orders`. M13 can deploy standalone. | **VERIFIED ON PG 15 CONTAINER** | Tested via PG-INT-19 (standalone: 2 internal FKs) and PG-INT-20 (coupled: 4 FKs). |
 | **Shared Object Conflicts** | Generic platform trigger functions | Staging may contain `public.set_current_timestamp_updated_at()`. | Migration uses dedicated `public.m13_set_updated_at()`. Checks `pg_proc` for 0-argument signature and definition before touching. Leaves shared function intact. | **VERIFIED ON PG 15 CONTAINER** | Scenario PG-INT-09 and PG-INT-14 prove existing functions and external objects remain 100% untouched. |
-| **Rollback Ownership Guards** | Verified trigger OIDs, function presence, and policy definitions | Rollback must not drop foreign same-named triggers or policies. | Rollback queries `pg_trigger.tgfoid`, function existence, and policy role arrays before dropping; aborts on clash. | **VERIFIED ON PG 15 CONTAINER** | Tested via PG-INT-17, PG-INT-18, PG-INT-21, PG-INT-22. |
+| **Rollback Ownership Guards** | Verified trigger OIDs, function presence, and exact normalized role sets | Rollback must not drop foreign same-named triggers or policies. | Rollback queries `pg_trigger.tgfoid`, function existence, and exact normalized role arrays before dropping; aborts on clash. | **VERIFIED ON PG 15 CONTAINER** | Tested via PG-INT-17, PG-INT-18, PG-INT-21, PG-INT-22, PG-INT-25, PG-INT-26. |
 | **Staging Project Reference** | Explicit non-production environment designation | Operator must connect to a verified non-production project ref. | Repository contains zero credentials or hardcoded staging refs. | **BLOCKED** | Project ref `<staging-ref>` must be explicitly designated in Owner Decision 4. |
 | **Pre-Migration Backup / PITR** | Disaster recovery readiness | Point-in-time recovery or manual snapshot required prior to DDL execution. | Documented in Stage 4 Runbook. | **NOT VERIFIED ON SUPABASE** | Live staging backup has not been captured yet. |
 

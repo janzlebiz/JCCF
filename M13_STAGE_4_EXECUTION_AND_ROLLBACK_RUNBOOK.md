@@ -1,14 +1,15 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Execution & Rollback Runbook (Staging) (Remediated v3.0)
+# Subsystem M13 Stage 4: Execution & Rollback Runbook (Staging) (Remediated v4.0)
 
 **Document ID:** `JCCF-M13-STAGE-4-RUNBOOK`  
-**Version:** 3.0 (Post-Review Reconciliation)  
-**Date:** 13 November 2026 (2026-11-13T02:06:00+08:00)  
+**Version:** 4.0 (Final Targeted Refinements Baseline — F6 & F7 Resolved)  
+**Date:** 13 November 2026 (2026-11-13T02:18:00+08:00)  
 **Status:** PROPOSED OPERATOR RUNBOOK — DO NOT EXECUTE WITHOUT D4 APPROVAL  
 **Governing Migration Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
-**Verified CI Workflow SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
+**Governing Rollback Commit SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
+**Verified CI Workflow SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **Target Migration:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`)  
-**Target Rollback:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `33911582CB3FCD893A4286D71AB28CAEECEE1B56696EA840DE59A184BD5B4BD4`)  
+**Target Rollback:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4`)  
 
 ---
 
@@ -22,7 +23,7 @@
 
 Before initiating the migration, the operator must complete the following checklist:
 
-- [ ] **Owner Authorization Confirmed:** Owner has signed Decision 4, explicitly citing migration hash `9D6579BC...` and rollback hash `33911582...`.
+- [ ] **Owner Authorization Confirmed:** Owner has signed Decision 4, explicitly citing migration hash `9D6579BC...` and rollback hash `73725DF9...`.
 - [ ] **Target Project Verified:** Target project reference `<staging-ref>` is verified as non-production in Supabase dashboard.
 - [ ] **Production Boundary Safe:** Target host is confirmed as `db.<staging-ref>.supabase.co`; confirmed distinct from production project.
 - [ ] **Operator Privileges:** Operator has admin/postgres connection credentials for staging.
@@ -80,7 +81,7 @@ psql -h db.<staging-ref>.supabase.co -U postgres -d postgres \
 
 ---
 
-### Step 4: Post-Migration Validation Queries (F3 Reconciled)
+### Step 4: Post-Migration Validation Queries (F3 & F7 Reconciled)
 Execute verification queries to confirm catalog state across separate testing blocks:
 
 #### 4.1 Schema & RLS Catalog Verification (Admin Session)
@@ -105,7 +106,7 @@ JOIN pg_proc p ON t.tgfoid = p.oid
 WHERE p.proname = 'm13_set_updated_at';
 ```
 
-#### 4.2 Role Permission Tests (Dedicated External Sessions)
+#### 4.2 Complete Permission Matrix Tests (Dedicated Sessions)
 Execute in dedicated client sessions (or transactions) outside PL/pgSQL blocks to test authentic permission barriers:
 ```sql
 -- PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
@@ -114,11 +115,15 @@ SET ROLE anon;
 SELECT count(*) FROM public.personalization_templates WHERE is_active = true; -- Expected: PASS
 -- Attempting read on sessions (Expected: ERROR: permission denied for table customization_sessions)
 SELECT * FROM public.customization_sessions;
+-- Attempting read on orders (Expected: ERROR: permission denied for table order_customizations)
+SELECT * FROM public.order_customizations;
 RESET ROLE;
 
 -- Authenticated Session:
 SET ROLE authenticated;
 SELECT count(*) FROM public.personalization_templates WHERE is_active = true; -- Expected: PASS
+-- Attempting read on sessions (Expected: ERROR: permission denied for table customization_sessions)
+SELECT * FROM public.customization_sessions;
 -- Attempting read on orders (Expected: ERROR: permission denied for table order_customizations)
 SELECT * FROM public.order_customizations;
 RESET ROLE;
@@ -133,7 +138,7 @@ RESET ROLE;
 
 ---
 
-## 3. Rollback Procedure & Stop Conditions (F1 & F2 Reconciled)
+## 3. Rollback Procedure & Stop Conditions (F1 & F6 Reconciled)
 
 ### Stop Conditions:
 Trigger immediate rollback if:
