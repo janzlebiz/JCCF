@@ -1,8 +1,8 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13: Comprehensive Accessibility & Color Contrast Audit (v2.0)
+# Subsystem M13: Comprehensive Accessibility & Color Contrast Audit (v2.1 Reconciled)
 
 **Document ID:** `JCCF-AUD-A11Y-001`  
-**Version:** 2.0 (Post-Remediation Verification)  
+**Version:** 2.1 (Reconciled with Matrix & Gap Reports)  
 **Date:** 12 November 2026  
 **Status:** Verification Complete — Measured Contrast Cataloged  
 **Author:** Antigravity Architecture & Design Review  
@@ -16,6 +16,7 @@ In response to pre-implementation review findings, the stylesheet `templates/pet
 - The running header text (`.page-header`) was darkened from `#A89F98` (2.60:1) to `#5C544E` (**7.41:1**, achieving full WCAG AAA compliance).
 - The running footer text (`.page-footer`) was darkened from `#7A726D` (4.71:1) to `#5A524D` (**7.64:1**, achieving full WCAG AAA compliance).
 - The Warm Sand cover accent border was deepened from `#8C786E` (3.67:1) to `#6E5A50` (**5.69:1**, exceeding WCAG AA large text and UI component standards).
+- All card container text was verified: main card text achieves **14.25:1**, and card muted text achieves **7.18:1** (both strictly exceeding the 7.0:1 AAA threshold).
 
 ---
 
@@ -43,7 +44,7 @@ $$CR = \frac{\max(L_1, L_2) + 0.05}{\min(L_1, L_2) + 0.05}$$
 | **Body: Running Header Title** | `#5C544E` | `#FFFFFF` | **7.41:1** | PASS | **PASS (Normal)** | Remediated from 2.60:1; full AAA pass |
 | **Body: Running Footer Page Number** | `#5A524D` | `#FFFFFF` | **7.64:1** | PASS | **PASS (Normal)** | Remediated from 4.71:1; full AAA pass |
 | **Body: Card Container Text** | `#2D2724` | `#FDFBF9` | **14.25:1**| PASS | **PASS (Normal)** | Text inside profile cards |
-| **Body: Card Muted Text** | `#5C544E` | `#FDFBF9` | **7.18:1** | PASS | **PASS (Normal)** | Labels inside profile cards |
+| **Body: Card Muted Text** | `#5C544E` | `#FDFBF9` | **7.18:1** | PASS | **PASS (Normal)** | Lowest printable text ratio; passes AAA |
 | **Body: Sage Meadow Accent Text** | `#2D4F32` | `#FFFFFF` | **9.23:1** | PASS | **PASS (Normal)** | Accent badges on white |
 | **Body: Terracotta Accent Text** | `#84331C` | `#FFFFFF` | **8.50:1** | PASS | **PASS (Normal)** | Accent badges on white |
 | **Body: Midnight Navy Accent Text** | `#1E2E3E` | `#FFFFFF` | **13.86:1**| PASS | **PASS (Normal)** | Accent badges on white |
@@ -54,7 +55,7 @@ $$CR = \frac{\max(L_1, L_2) + 0.05}{\min(L_1, L_2) + 0.05}$$
 ## 3. Accurate Accessibility Classification
 
 1. **Reading Text (100% WCAG AAA Compliant):**
-   - Every single line of printable text—headings, body prose, running headers, running footers, card labels, pull quotes, and colophons—achieves a contrast ratio strictly $\ge 7.18:1$ across all 5 palettes.
+   - Every single line of printable text—headings, body prose, running headers (7.41:1), running footers (7.64:1), card muted text (7.18:1), pull quotes, and colophons—achieves a contrast ratio strictly $\ge 7.18:1$ across all 5 palettes.
    - Zero text elements fail WCAG AAA.
 
 2. **Decorative & Border Accents (WCAG AA Large / UI Compliant):**
@@ -64,4 +65,4 @@ $$CR = \frac{\max(L_1, L_2) + 0.05}{\min(L_1, L_2) + 0.05}$$
 
 ## 4. Final Accessibility Verdict
 
-All text elements are mathematically verified to satisfy **WCAG 2.1 Level AAA** ($\ge 7.0:1$). All non-text graphical elements satisfy **WCAG 2.1 Level AA** ($\ge 3.0:1$). Stale claims of sub-AAA text failures are resolved.
+All text elements are mathematically verified to satisfy **WCAG 2.1 Level AAA** ($\ge 7.0:1$, range **7.18:1 to 14.71:1**). All non-text graphical elements satisfy **WCAG 2.1 Level AA** ($\ge 3.0:1$, range **5.04:1 to 7.02:1**). The accessibility audit, release-readiness matrix, and evidence-gap report are in exact quantitative alignment.
