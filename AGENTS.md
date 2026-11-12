@@ -40,7 +40,7 @@
 ## 3. Subsystem M13 (Interactive Personalization Engine) Contracts
 
 * **Schema Invariant:** Driven by declarative `petstory_v1_schema.json`.
-* **Database Permissions:** Public roles (`anon`, `authenticated`) have `SELECT` on active rows of `personalization_templates` only, enforced by RLS. Public direct PostgREST access is strictly revoked (`REVOKE ALL`) on `customization_sessions` and `order_customizations`.
+* **Database Permissions:** Public roles (`anon`, `authenticated`) have `SELECT` on active rows of `personalization_templates` only, granted via explicit table-level `GRANT SELECT` and constrained by RLS. Direct table privileges are revoked (`REVOKE ALL`) on `customization_sessions` and `order_customizations` from `anon` and `authenticated`.
 * **Service-Role Boundary:** `service_role` credentials exist exclusively in server-side FastAPI / background worker environments. Never expose service-role credentials to frontend client bundles or browser logs.
 * **Token Security:** SHA-256 token hashing at rest (`token_hash`, `download_token_hash`). Zero token logging.
 * **Rendering Pipeline:** Standard HTML5 + CSS Paged Media (210mm x 210mm square format). Zero external font or style HTTP calls. Compiles cleanly on both WeasyPrint (Linux container worker) and Headless Chromium (local Windows development workstation).
