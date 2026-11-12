@@ -159,3 +159,4 @@ It is critical to distinguish between executing `migrations/20261112_001_persona
 2. PITR snapshot timestamp must be logged in the preflight execution checklist.
 3. The operator must confirm that no production customer data resides in the target staging database.
 4. Final execution must proceed only after D4 owner authorization.
+

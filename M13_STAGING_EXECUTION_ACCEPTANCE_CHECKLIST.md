@@ -100,3 +100,4 @@ Immediately upon applying `20261112_001_personalization_engine.sql` in staging, 
 | **E6.8** | Anon Denial Check | `SET ROLE anon; SELECT * FROM public.customization_sessions; RESET ROLE;` | Fails with permission denied or returns 0 rows |
 | **E6.9** | PostgREST Cache Reload| `NOTIFY pgrst, 'reload schema';` | Executes without error |
 | **E6.10**| Final Sign-Off | Document post-migration evidence in `M13_STAGE_4_EVIDENCE_REGISTER.md` | Staging Verification: PASSED |
+
