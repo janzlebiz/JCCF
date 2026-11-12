@@ -16,6 +16,27 @@
 BEGIN;
 
 -- ==============================================================================
+-- 0. Required Role Verification Guard (Fail-Closed on Supabase Dependencies)
+-- ==============================================================================
+-- Subsystem M13 requires PostgREST standard roles (anon, authenticated, service_role).
+-- Aborts immediately before any schema mutation if any required role is absent.
+DO $$
+DECLARE
+    v_missing_roles TEXT[];
+BEGIN
+    SELECT array_agg(r.req_role)
+    INTO v_missing_roles
+    FROM (VALUES ('anon'), ('authenticated'), ('service_role')) AS r(req_role)
+    WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r.req_role);
+
+    IF v_missing_roles IS NOT NULL AND array_length(v_missing_roles, 1) > 0 THEN
+        RAISE EXCEPTION 'M13 Preflight Failed: Required Supabase role(s) % do not exist. Aborting migration before schema mutation.', 
+            array_to_string(v_missing_roles, ', ');
+    END IF;
+    RAISE NOTICE 'Required PostgREST roles (anon, authenticated, service_role) verified.';
+END $$;
+
+-- ==============================================================================
 -- 0. Subsystem-Namespaced Trigger Function (Collision-Safe Creation)
 -- ==============================================================================
 -- Inspects pg_proc for public.m13_set_updated_at().
@@ -482,28 +503,15 @@ ALTER TABLE public.order_customizations ENABLE ROW LEVEL SECURITY;
 -- ==============================================================================
 -- 6. Explicit Table Privileges
 -- ==============================================================================
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
-        REVOKE ALL ON public.customization_sessions FROM anon;
-        REVOKE ALL ON public.order_customizations FROM anon;
-        REVOKE ALL ON public.personalization_templates FROM anon;
-        GRANT SELECT ON public.personalization_templates TO anon;
-    END IF;
+-- Enforces least-privilege boundary across verified PostgREST roles.
+REVOKE ALL ON public.customization_sessions FROM anon, authenticated;
+REVOKE ALL ON public.order_customizations FROM anon, authenticated;
+REVOKE ALL ON public.personalization_templates FROM anon, authenticated;
+GRANT SELECT ON public.personalization_templates TO anon, authenticated;
 
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-        REVOKE ALL ON public.customization_sessions FROM authenticated;
-        REVOKE ALL ON public.order_customizations FROM authenticated;
-        REVOKE ALL ON public.personalization_templates FROM authenticated;
-        GRANT SELECT ON public.personalization_templates TO authenticated;
-    END IF;
-
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-        GRANT ALL ON public.personalization_templates TO service_role;
-        GRANT ALL ON public.customization_sessions TO service_role;
-        GRANT ALL ON public.order_customizations TO service_role;
-    END IF;
-END $$;
+GRANT ALL ON public.personalization_templates TO service_role;
+GRANT ALL ON public.customization_sessions TO service_role;
+GRANT ALL ON public.order_customizations TO service_role;
 
 -- ==============================================================================
 -- 7. Protected Row Level Security Policies (Complete Definition Verification)
@@ -533,6 +541,7 @@ BEGIN
           AND policyname = 'Public read active templates';
 
         IF v_cmd != 'SELECT' 
+           OR NOT (v_roles @> ARRAY['anon'::name] AND v_roles @> ARRAY['authenticated'::name])
            OR (v_qual != '(is_active = true)' AND v_qual != 'is_active')
            OR v_with_check IS NOT NULL THEN
             RAISE EXCEPTION 'M13 Preflight Failed: Policy "Public read active templates" exists with incompatible definition (cmd %, roles %, qual %, with_check %). Aborting.', 
@@ -540,17 +549,10 @@ BEGIN
         END IF;
         RAISE NOTICE 'Policy "Public read active templates" verified on public.personalization_templates.';
     ELSE
-        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-            CREATE POLICY "Public read active templates"
-                ON public.personalization_templates FOR SELECT
-                TO anon, authenticated
-                USING (is_active = true);
-        ELSE
-            CREATE POLICY "Public read active templates"
-                ON public.personalization_templates FOR SELECT
-                TO public
-                USING (is_active = true);
-        END IF;
+        CREATE POLICY "Public read active templates"
+            ON public.personalization_templates FOR SELECT
+            TO anon, authenticated
+            USING (is_active = true);
         RAISE NOTICE 'Policy "Public read active templates" created.';
     END IF;
 
@@ -570,20 +572,14 @@ BEGIN
           AND tablename = 'personalization_templates'
           AND policyname = 'Service role full access on personalization_templates';
 
-        IF v_cmd != 'ALL' OR v_qual != 'true' OR v_with_check != 'true' THEN
+        IF v_cmd != 'ALL' OR NOT (v_roles @> ARRAY['service_role'::name]) OR v_qual != 'true' OR v_with_check != 'true' THEN
             RAISE EXCEPTION 'M13 Preflight Failed: Policy "Service role full access on personalization_templates" exists with incompatible definition. Aborting.';
         END IF;
         RAISE NOTICE 'Policy "Service role full access on personalization_templates" verified.';
     ELSE
-        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-            CREATE POLICY "Service role full access on personalization_templates"
-                ON public.personalization_templates FOR ALL
-                TO service_role USING (true) WITH CHECK (true);
-        ELSE
-            CREATE POLICY "Service role full access on personalization_templates"
-                ON public.personalization_templates FOR ALL
-                TO public USING (true) WITH CHECK (true);
-        END IF;
+        CREATE POLICY "Service role full access on personalization_templates"
+            ON public.personalization_templates FOR ALL
+            TO service_role USING (true) WITH CHECK (true);
         RAISE NOTICE 'Policy "Service role full access on personalization_templates" created.';
     END IF;
 
@@ -603,20 +599,14 @@ BEGIN
           AND tablename = 'customization_sessions'
           AND policyname = 'Service role full access on customization_sessions';
 
-        IF v_cmd != 'ALL' OR v_qual != 'true' OR v_with_check != 'true' THEN
+        IF v_cmd != 'ALL' OR NOT (v_roles @> ARRAY['service_role'::name]) OR v_qual != 'true' OR v_with_check != 'true' THEN
             RAISE EXCEPTION 'M13 Preflight Failed: Policy "Service role full access on customization_sessions" exists with incompatible definition. Aborting.';
         END IF;
         RAISE NOTICE 'Policy "Service role full access on customization_sessions" verified.';
     ELSE
-        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-            CREATE POLICY "Service role full access on customization_sessions"
-                ON public.customization_sessions FOR ALL
-                TO service_role USING (true) WITH CHECK (true);
-        ELSE
-            CREATE POLICY "Service role full access on customization_sessions"
-                ON public.customization_sessions FOR ALL
-                TO public USING (true) WITH CHECK (true);
-        END IF;
+        CREATE POLICY "Service role full access on customization_sessions"
+            ON public.customization_sessions FOR ALL
+            TO service_role USING (true) WITH CHECK (true);
         RAISE NOTICE 'Policy "Service role full access on customization_sessions" created.';
     END IF;
 
@@ -636,20 +626,14 @@ BEGIN
           AND tablename = 'order_customizations'
           AND policyname = 'Service role full access on order_customizations';
 
-        IF v_cmd != 'ALL' OR v_qual != 'true' OR v_with_check != 'true' THEN
+        IF v_cmd != 'ALL' OR NOT (v_roles @> ARRAY['service_role'::name]) OR v_qual != 'true' OR v_with_check != 'true' THEN
             RAISE EXCEPTION 'M13 Preflight Failed: Policy "Service role full access on order_customizations" exists with incompatible definition. Aborting.';
         END IF;
         RAISE NOTICE 'Policy "Service role full access on order_customizations" verified.';
     ELSE
-        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-            CREATE POLICY "Service role full access on order_customizations"
-                ON public.order_customizations FOR ALL
-                TO service_role USING (true) WITH CHECK (true);
-        ELSE
-            CREATE POLICY "Service role full access on order_customizations"
-                ON public.order_customizations FOR ALL
-                TO public USING (true) WITH CHECK (true);
-        END IF;
+        CREATE POLICY "Service role full access on order_customizations"
+            ON public.order_customizations FOR ALL
+            TO service_role USING (true) WITH CHECK (true);
         RAISE NOTICE 'Policy "Service role full access on order_customizations" created.';
     END IF;
 END $$;

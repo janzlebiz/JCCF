@@ -249,9 +249,9 @@ class MigrationScenarioVerifier:
     def verify_scenario_10_clean_rollback_succeeds(self):
         """Scenario 10: Rollback on a clean M13 installation — succeeds."""
         # Verify rollback drops tables in reverse dependency with RESTRICT
-        has_fk_drops = "ALTER TABLE IF EXISTS public.order_customizations \n    DROP CONSTRAINT IF EXISTS fk_order_customizations_order" in self.rollback_sql or "DROP CONSTRAINT IF EXISTS fk_order_customizations_order" in self.rollback_sql
-        has_trg_drops = "DROP TRIGGER IF EXISTS trg_personalization_templates_updated_at" in self.rollback_sql
-        has_pol_drops = "DROP POLICY IF EXISTS \"Public read active templates\"" in self.rollback_sql
+        has_fk_drops = "DROP CONSTRAINT IF EXISTS fk_order_customizations_order" in self.rollback_sql
+        has_trg_drops = "DROP TRIGGER trg_personalization_templates_updated_at" in self.rollback_sql
+        has_pol_drops = "DROP POLICY \"Public read active templates\"" in self.rollback_sql
         has_table_restrict = "DROP TABLE IF EXISTS public.personalization_templates RESTRICT;" in self.rollback_sql
         has_func_restrict = "DROP FUNCTION public.m13_set_updated_at() RESTRICT" in self.rollback_sql
 
