@@ -58,3 +58,4 @@ jobs:
           PGPASSWORD: testpassword123
           PGDATABASE: postgres
         run: python tests/test_migration_postgres_integration.py
+
