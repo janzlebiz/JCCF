@@ -3,15 +3,15 @@
 -- Subsystem: M13 Interactive Personalization Engine (Hardened & Reconciled)
 -- Target DB: PostgreSQL 15+ / Supabase PostgreSQL
 -- Status: PRE-IMPLEMENTATION SPECIFICATION ONLY (DO NOT APPLY AUTOMATICALLY)
--- Safety Hardening & Defect Closures (M13-R4, M13-R6):
+-- Safety Hardening & Defect Closures:
 --   1. Restrictive dependency handling: All tables dropped with DROP TABLE ... RESTRICT.
 --      Zero CASCADE statements. If any unexpected external object or foreign key depends
 --      on M13 tables, PostgreSQL immediately aborts the transaction.
 --   2. Explicit constraint and trigger cleanup: Known M13 foreign keys, triggers, and
 --      policies are removed cleanly before table deletion.
---   3. M13-owned function cleanup: Drops exclusively public.m13_set_updated_at() RESTRICT
---      after confirming zero external triggers depend on it. Leaves all shared platform
---      functions (e.g. set_current_timestamp_updated_at) completely untouched.
+--   3. M13-owned function cleanup: Drops exclusively 0-argument public.m13_set_updated_at()
+--      using RESTRICT mode after confirming zero external triggers depend on its procedure OID.
+--      Leaves all shared platform functions completely untouched.
 --   4. Scope of reversibility limitation: Rollback removes M13-owned schema objects and
 --      associated table data. It cannot restore pre-existing data or external objects.
 -- ==============================================================================
@@ -21,8 +21,6 @@ BEGIN;
 -- ==============================================================================
 -- 1. Explicit Outbound Foreign Key Severing (M13 Tables Only)
 -- ==============================================================================
--- Sever outbound foreign key constraints on M13 tables to allow clean table deletion
--- without cascading into external business tables (orders, products).
 ALTER TABLE IF EXISTS public.order_customizations 
     DROP CONSTRAINT IF EXISTS fk_order_customizations_order;
 
@@ -51,10 +49,8 @@ DROP POLICY IF EXISTS "Service role full access on customization_sessions" ON pu
 DROP POLICY IF EXISTS "Service role full access on order_customizations" ON public.order_customizations;
 
 -- ==============================================================================
--- 4. Restrictive Table Drops (Zero CASCADE per M13-R6)
+-- 4. Restrictive Table Drops (Zero CASCADE)
 -- ==============================================================================
--- Tables dropped in strict reverse-dependency order using RESTRICT.
--- Any unexpected external reference will abort the rollback safely.
 DROP TABLE IF EXISTS public.order_customizations RESTRICT;
 DROP TABLE IF EXISTS public.customization_sessions RESTRICT;
 DROP TABLE IF EXISTS public.personalization_templates RESTRICT;
@@ -62,8 +58,6 @@ DROP TABLE IF EXISTS public.personalization_templates RESTRICT;
 -- ==============================================================================
 -- 5. Safe M13-Owned Trigger Function Cleanup (Catalog Verification)
 -- ==============================================================================
--- Drops exclusively the M13-namespaced function with RESTRICT mode after verifying
--- that zero external triggers in pg_catalog reference its procedure OID.
 DO $$
 DECLARE
     v_proc_oid OID;
@@ -73,7 +67,8 @@ BEGIN
     FROM pg_proc p
     JOIN pg_namespace n ON p.pronamespace = n.oid
     WHERE n.nspname = 'public' 
-      AND p.proname = 'm13_set_updated_at';
+      AND p.proname = 'm13_set_updated_at'
+      AND p.pronargs = 0;
 
     IF v_proc_oid IS NOT NULL THEN
         -- Check if any remaining non-internal triggers reference this procedure OID

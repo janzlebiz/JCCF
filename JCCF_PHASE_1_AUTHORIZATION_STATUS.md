@@ -1,18 +1,21 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13: Phase 1 Authorization & Governance Status (v2.0)
+# Subsystem M13: Phase 1 Authorization & Governance Status (v3.0)
 
 **Document ID:** `JCCF-STAT-AUTH-001`  
-**Version:** 2.0 (Owner Decision Reconciled)  
-**Date:** 12 November 2026  
+**Version:** 3.0 (Migration Safety Remediation & 12-Scenario Verification Reconciled)  
+**Date:** 13 November 2026  
 **Status:** Formal Authorization Register  
 **Current Operational State:** **DECISIONS 1 & 2 APPROVED; DECISION 3 CONDITIONAL; DECISIONS 4 & 5 UNAUTHORIZED**  
 **Governing Authority:** Platform Owner  
+**Repository Baseline:** `https://github.com/janzlebiz/JCCF` (Commit `2e3bc1675d25564c02a9d53e1939ab34b9313953`)  
 
 ---
 
 ## 1. Executive Summary
 
-On 12 November 2026, the JCCF Platform Owner reviewed the pre-implementation verification evidence and formally registered the following binding determinations:
+As of 13 November 2026, Subsystem M13 (Interactive Personalization Engine) has completed all pre-implementation safety hardening and data-model reconciliations (M13-R1 to M13-R6).
+
+The current binding owner authorizations remain strictly bounded:
 - **Decision 1 (Approved):** Conceptual and architectural approval of Subsystem M13 (Interactive Personalization Engine) as a reusable platform capability. Does not authorize implementation.
 - **Decision 2 (Approved):** Scope lock for Janzle PetStory as a digital-only 24-page PDF keepsake MVP. Physical POD and mobile applications are strictly excluded.
 - **Decision 3 (Conditionally Endorsed):** Lemon Squeezy is endorsed as the candidate Merchant of Record, subject to official provider evidence and successful Philippine KYC onboarding. Credential configuration remains blocked.
@@ -57,7 +60,9 @@ The repository was audited to confirm compliance with the owner's restrictions:
 * `[VERIFIED]` **Empirical Deliverables Retained:**
   - `JCCF_PetStory_Verified_Sample_24p.pdf` (211,983 bytes, fallback quotes edition)
   - `JCCF_PetStory_Raster_Verified_24p.pdf` (274,622 bytes, 10 raster images embedded)
-  - `test_hostile_input_sanitization.py` (XSS and template injection test suite, 100% pass)
+  - `tests/test_hostile_input_sanitization.py` (XSS and template injection test suite, 100% pass)
+  - `tests/audit_eoc_model.py` (16/16 assertions pass, $5,644.61 EOC / 86.91% margin)
+  - `tests/test_migration_scenarios.py` (12/12 migration & rollback scenarios verified)
   - `templates/petstory_v1/style.css` (Remediated WCAG AAA typography)
 
 ---
@@ -65,19 +70,18 @@ The repository was audited to confirm compliance with the owner's restrictions:
 ## 4. Next Steps for Platform Owner
 
 The platform owner may:
-1. Review the revised pre-implementation verification evidence package:
-   - [JCCF_M13_VERIFICATION_EVIDENCE_GAP_REPORT.md](file:///d:/Antigravity/JCCF/JCCF_M13_VERIFICATION_EVIDENCE_GAP_REPORT.md)
-   - [JCCF_M13_RENDER_REPRODUCIBILITY_REPORT.md](file:///d:/Antigravity/JCCF/JCCF_M13_RENDER_REPRODUCIBILITY_REPORT.md)
-   - [JCCF_M13_ACCESSIBILITY_AUDIT.md](file:///d:/Antigravity/JCCF/JCCF_M13_ACCESSIBILITY_AUDIT.md)
-   - [JCCF_EV_PAY_001_PHILIPPINES_PAYOUT_FEASIBILITY.md](file:///d:/Antigravity/JCCF/JCCF_EV_PAY_001_PHILIPPINES_PAYOUT_FEASIBILITY.md)
+1. Review the final handoff and pre-implementation verification evidence package:
+   - [JCCF_M13_FINAL_REMEDIATION_AND_NEXT_STAGE_HANDOFF.md](file:///d:/Antigravity/JCCF/JCCF_M13_FINAL_REMEDIATION_AND_NEXT_STAGE_HANDOFF.md)
+   - [migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md](file:///d:/Antigravity/JCCF/migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md)
    - [JCCF_M13_Final_Release_Readiness_Matrix.md](file:///d:/Antigravity/JCCF/JCCF_M13_Final_Release_Readiness_Matrix.md)
+   - [JCCF_EV_PAY_001_PHILIPPINES_PAYOUT_FEASIBILITY.md](file:///d:/Antigravity/JCCF/JCCF_EV_PAY_001_PHILIPPINES_PAYOUT_FEASIBILITY.md)
 2. Issue an updated authorization instruction when ready:
-   - *"Authorize Decision 4"* (Authorizes development database migration only).
-   - *"Authorize Decisions 4 and 5 — Begin Phase 1"* (Authorizes development database migration and Phase 1 sprint).
+   - *"Authorize Decision 4 for staging project `<staging-ref>`"* (Authorizes staging database migration only).
+   - *"Authorize Decisions 4 and 5 — Begin Phase 1"* (Authorizes staging database migration and Phase 1 sprint).
    - *"Maintain Hold"* (Maintains current halted operational state).
 
 ---
 
 ## 5. Formal Operational Statement
 
-**Pre-implementation verification remediation complete. Awaiting owner review. Decisions 1 and 2 approved; Decision 3 conditional; Decisions 4 and 5 unauthorized.**
+**Subsystem M13 pre-implementation remediation and verification complete. Awaiting owner review. Decisions 1 and 2 approved; Decision 3 conditional; Decisions 4 and 5 unauthorized.**

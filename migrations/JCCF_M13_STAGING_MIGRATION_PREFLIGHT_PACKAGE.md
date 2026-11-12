@@ -1,8 +1,8 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13: Staging Migration Preflight, Verification & Rollback Package (v3.0)
+# Subsystem M13: Staging Migration Preflight, Verification & Rollback Package (v3.1)
 
 **Document ID:** `JCCF-PKG-MIG-001`  
-**Version:** 3.0 (Comprehensive Schema Preflight, Reconciled Baseline & Restrictive Rollback)  
+**Version:** 3.1 (PostgreSQL Integration Suite & Automated CI Workflow Added)  
 **Date:** 13 November 2026  
 **Status:** Preflight Specification & Rollback Procedure (Execution NOT AUTHORIZED)  
 **Target Migration:** `migrations/20261112_001_personalization_engine.sql`  
@@ -15,20 +15,24 @@
 
 This preflight package specifies the technical preconditions, comprehensive schema compatibility checks, and rollback safety mechanisms for **Decision 4 (Development / Staging Database Migration)**.
 
-Key safety remediations and defect closures in v3.0:
-1. **Collision-Safe Function Creation (M13-R1):** Migration inspects `pg_proc` for `public.m13_set_updated_at()`. Verifies exact signature (returns `trigger`, language `plpgsql`, body contains `NEW.updated_at = now()`). Aborts migration if an incompatible function exists, preventing silent replacement of existing procedures.
-2. **Complete Schema Preflight Validation (M13-R2):** Replaced 3-column representative checks with comprehensive validation across all 3 M13 tables. Inspects 100% of required columns, exact PostgreSQL data types, nullability, defaults, primary keys, and unique constraints.
-3. **Foreign-Key Validation by Definition (M13-R3):** Scopes constraint checks by table and verifies referenced schema, table, columns, and `ON DELETE` / `ON UPDATE` actions (`RESTRICT` / `CASCADE`), aborting if existing constraints differ.
-4. **Trigger & Policy Protection (M13-R4):** Replaced blind `DROP TRIGGER / POLICY IF EXISTS` with inspection blocks. Validates procedure OID and policy definition (`cmd`, `qual`), preventing destruction or replacement of unrelated pre-existing objects.
+Key safety remediations and defect closures in v3.1:
+1. **Collision-Safe Function Creation (M13-R1):** Exact 0-argument signature check on `pg_proc`. Safely detects overloaded functions; aborts if an existing function has non-zero arguments, wrong return type, or non-plpgsql language.
+2. **Complete Schema Preflight Validation (M13-R2):** Exhaustive validation across all 3 M13 tables. Inspects 100% of required columns, exact PostgreSQL data types, lengths, nullability, defaults, primary keys, and unique constraints.
+3. **Foreign-Key Validation by Definition (M13-R3):** Scopes constraint checks by table and verifies source columns (`product_id`, `order_id`), referenced schema/table/columns (`products(id)`, `orders(id)`), and actions (`RESTRICT`/`CASCADE`).
+4. **Trigger & Policy Protection (M13-R4):** Replaced blind drops with full definition inspections. Policies verify command, roles (`anon`, `authenticated`, `service_role`), and exact expressions (`USING (is_active = true)`).
 5. **Reconciled Data Model (M13-R5):** Fully restored the approved architecture baseline for `order_customizations`:
    - `rendered_artifact_path TEXT` restored.
    - `render_error_log TEXT` restored.
    - `runtime_qel_results JSONB NOT NULL DEFAULT '{}'::jsonb` restored.
    - `CONSTRAINT uq_order_customization_order UNIQUE (order_id)` restored.
    - `download_token_hash VARCHAR(64) UNIQUE NOT NULL` restored.
-   - `download_expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '90 days')` restored (30 days for transient quiz sessions, 90 days for customer download fulfillment).
+   - `download_expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '90 days')` restored.
    - Unapproved `customized_payload` and `max_downloads` removed.
-6. **Demonstrably Safe Restrictive Rollback (M13-R6):** All tables dropped with `DROP TABLE ... RESTRICT` (zero `CASCADE`). M13 function dropped with `RESTRICT` only after verifying zero external trigger dependencies. Documents scope of reversibility.
+6. **Demonstrably Safe Restrictive Rollback (M13-R6):** All tables dropped with `DROP TABLE ... RESTRICT` (zero `CASCADE`). M13 function dropped with `RESTRICT` only after verifying zero external trigger dependencies.
+7. **Verification Architecture (Separate Suites):**
+   - **Static Inspection Suite:** `tests/test_migration_scenarios.py` (12 scenarios, verified via AST and syntax inspection).
+   - **Real PostgreSQL Integration Suite:** `tests/test_migration_postgres_integration.py` (14 scenarios against live PostgreSQL 15+).
+   - **Automated CI Integration:** `.github/workflows/postgres_verification.yml` executing PostgreSQL 15+ container service on GitHub Actions.
 
 ---
 

@@ -1,0 +1,60 @@
+name: M13 PostgreSQL Execution Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  postgres-verification:
+    name: PostgreSQL 15+ Migration & Rollback Integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword123
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Test Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install psycopg2-binary Jinja2
+
+      - name: Run EOC Programmatic Model Audit
+        run: python tests/audit_eoc_model.py
+
+      - name: Run Hostile Input Sanitization Audit
+        run: python tests/test_hostile_input_sanitization.py
+
+      - name: Run Static SQL & AST Scenarios Suite
+        run: python tests/test_migration_scenarios.py
+
+      - name: Run Real PostgreSQL 15+ Integration Suite
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: testpassword123
+          PGDATABASE: postgres
+        run: python tests/test_migration_postgres_integration.py
