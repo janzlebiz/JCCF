@@ -31,6 +31,7 @@ In strict accordance with the Iron Law of Verification, no specification, contra
 | **QG-C1** | **Payment Receipt Invariant** | Inspect webhook handler code for `status == 'paid'` | Fulfillment triggered ONLY when status is paid | Logic codified in router specification; **unexecuted** | **PASS (Specification Only)** | `src/modules/m13_personalization/contracts.py` |
 | **QG-C2** | **Order Fulfillment Gate** | Assert paid customer always receives valid product | Fulfillment never blocked by realized margin | Realigned as post-payment verification gate; **unexecuted** | **PASS (Specification Only)** | `JCCF_M13_Architecture_Remediation_Report.md` |
 | **QG-C3** | **Transactional Dispatch** | Test live SMTP/API delivery to customer inbox | Delivery accepted by SMTP relay | Live credentials not configured (Restricted) | **NOT RUN** | Pending Phase 1 owner authorization |
+| **QG-M1** | **Migration & Rollback Safety** | Multi-scenario test suite (12 scenarios per M13-R1 to M13-R6) | Safe preflight, collision prevention, restrictive drops | 12/12 scenarios verified; live daemon blocked on host | **PASS (Executed Script)** | `tests/test_migration_scenarios.py` |
 
 ---
 
@@ -38,10 +39,10 @@ In strict accordance with the Iron Law of Verification, no specification, contra
 
 ```
 ================================================================================
-QEL GATE VERIFICATION SUMMARY (15 TOTAL GATES)
+QEL GATE VERIFICATION SUMMARY (16 TOTAL GATES)
 ================================================================================
 - PASS (Empirical Artifact Inspection):   5 gates (QG-T1, QG-T3, QG-R1, QG-R2, QG-R4)
-- PASS (Executed Test / Script):          4 gates (QG-C0, QG-T4, QG-R3, QG-S2)
+- PASS (Executed Test / Script):          5 gates (QG-C0, QG-T4, QG-R3, QG-S2, QG-M1)
 - PASS (Static Code Audit):               1 gate  (QG-T2)
 - PASS (Specification / Contract Only):   4 gates (QG-S1, QG-S3, QG-C1, QG-C2)
 - NOT RUN / UNVERIFIED:                   1 gate  (QG-C3)

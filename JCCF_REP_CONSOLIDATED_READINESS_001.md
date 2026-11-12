@@ -6,7 +6,7 @@
 **Status:** Pre-Implementation Specification Review Complete — Ready for Owner Decision  
 **Author:** Antigravity Architecture & Governance Review  
 **Governing State:** Decisions 1 & 2 Approved; Decision 3 Conditional; Decisions 4 & 5 NOT AUTHORIZED  
-**Repository Baseline:** `https://github.com/janzlebiz/JCCF` (Commit `5dccfbcf2994a55e38db07d0185660f07176b62f`)  
+**Repository Baseline:** `https://github.com/janzlebiz/JCCF` (Commit `c92d38c76ad406f07ca2f2c329670a7ff6825079`)  
 
 ---
 
@@ -38,9 +38,9 @@ To maintain uncompromising evidentiary integrity under the **Iron Law of Verific
 
 | Subsystem Component | Deliverable File | Verification Tier | Fresh Verification Evidence | Operational Status |
 |---|---|---|---|---|
-| **SQL Migration DDL** | `migrations/20261112_001_personalization_engine.sql` | `[SPECIFICATION ONLY]` | Syntax verified PostgreSQL 15+; explicit table grants to public (`GRANT SELECT` only on templates, `REVOKE ALL` on sessions/orders). | **UNAPPLIED (0 statements executed)** |
-| **SQL Rollback DDL** | `migrations/20261112_001_personalization_engine_rollback.sql` | `[STATIC INSPECTION]` | Verified restrictive table drops (`DROP TABLE ... RESTRICT`), explicit FK severing, and `pg_catalog` procedure OID checks (`pg_proc`, `pg_trigger`). | **UNAPPLIED (0 statements executed)** |
-| **Staging Preflight Package**| `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `[STATIC INSPECTION]` | Verified native `gen_random_uuid()` check (PostgreSQL 13+). Obsolete `pgcrypto` requirement eliminated. | **DOCUMENTED & ALIGNED** |
+| **SQL Migration DDL** | `migrations/20261112_001_personalization_engine.sql` | `[SPECIFICATION ONLY]` | Syntax verified PostgreSQL 15+; namespaced trigger `public.m13_set_updated_at()`, existing table compatibility guards, scoped FK checks, explicit table grants to public (`GRANT SELECT` only on templates, `REVOKE ALL` on sessions/orders). | **UNAPPLIED (0 statements executed)** |
+| **SQL Rollback DDL** | `migrations/20261112_001_personalization_engine_rollback.sql` | `[STATIC INSPECTION]` | Verified restrictive table drops (`DROP TABLE ... RESTRICT`), explicit FK severing, and dedicated M13 trigger function drop (`DROP FUNCTION IF EXISTS public.m13_set_updated_at() RESTRICT`). Shared functions untouched. | **UNAPPLIED (0 statements executed)** |
+| **Staging Preflight Package**| `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `[STATIC INSPECTION]` | Verified native `gen_random_uuid()` check (PostgreSQL 13+), compatibility guards, and scoped FK inspection. Obsolete `pgcrypto` requirement eliminated. | **DOCUMENTED & ALIGNED** |
 | **Keepsake PDF Generation** | `JCCF_PetStory_Raster_Verified_24p.pdf` | `[EMPIRICAL ARTIFACT]` | 274,622 bytes, exactly 24 pages, 209.9 mm x 209.9 mm square geometry, **10 embedded raster JPEG images**. | **PASSED (Headless Chromium)** |
 | **Fallback Keepsake PDF** | `JCCF_PetStory_Verified_Sample_24p.pdf` | `[EMPIRICAL ARTIFACT]` | 211,983 bytes, exactly 24 pages, 0 raster images, illustrated quote fallback spreads verified. | **PASSED (Headless Chromium)** |
 | **Hostile Input Sanitization**| `tests/test_hostile_input_sanitization.py` | `[EXECUTED AUTOMATED]` | Executed terminal test: XSS `<script>`, `onerror`, `<iframe>`, `<svg onload>`, and `{{ 7 * 7 }}` template injections safely escaped. | **PASSED (Terminal Exit Code 0)** |
@@ -81,6 +81,11 @@ All six authoritative governance and technical artifacts were audited for cross-
 |    - templates/petstory_v1/style.css: #5C544E header, #5A524D footer [MATCHES]                     |
 |    - JCCF_M13_ACCESSIBILITY_AUDIT.md: Card muted 7.18:1, Header 7.41:1, Body 14.71:1 [MATCHES]    |
 |    - JCCF_M13_Final_Release_Readiness_Matrix.md: 7.18:1 to 14.71:1 (AAA) [MATCHES]                |
+|                                                                                                    |
+| 6. Trigger Function Namespacing: Dedicated public.m13_set_updated_at()                             |
+|    - migrations/20261112_001_personalization_engine.sql: m13_set_updated_at() [MATCHES]           |
+|    - migrations/20261112_001_personalization_engine_rollback.sql: drops m13_set_updated_at() [MATCHES]|
+|    - migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md: documents m13_set_updated_at() [MATCHES]|
 +----------------------------------------------------------------------------------------------------+
 ```
 
