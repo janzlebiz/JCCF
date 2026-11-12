@@ -1,12 +1,14 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Execution & Rollback Runbook (Staging)
+# Subsystem M13 Stage 4: Execution & Rollback Runbook (Staging) (Remediated v2.0)
 
 **Document ID:** `JCCF-M13-STAGE-4-RUNBOOK`  
-**Date:** 13 November 2026 (2026-11-13T01:35:00+08:00)  
+**Version:** 2.0 (Post-Review Reconciliation)  
+**Date:** 13 November 2026 (2026-11-13T01:55:00+08:00)  
 **Status:** PROPOSED OPERATOR RUNBOOK — DO NOT EXECUTE WITHOUT D4 APPROVAL  
-**Governing Baseline Commit:** `e2c7e84a3febcadd76cda30991e1448451a80dd5`  
-**Target Migration:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `C475ED5C5668179789236F762FC1C04AA9B085F2B7B42E3C08724D0AB62028C9`)  
-**Target Rollback:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `897FDAB8EC808FB989258C361F712A4D522E2C1BCE80A4460BB2A7131A7F37C6`)  
+**Governing Migration Commit SHA:** `cfa4001b37ee8bdeb9030b025fb7e06bc9fab37e`  
+**Verified CI Workflow SHA:** `8d02d9b9748ab2c3a47618abc59be509bd6f2420`  
+**Target Migration:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `D24F82E587E31C238317D207ACB377DE5328C4A845FADF651598E25F266CECFE`)  
+**Target Rollback:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `10721C96BDDDDEBFF2C1D8FAB60FC4D22EFB663B2BDBF191DA9611F3992A7960`)  
 
 ---
 
@@ -20,24 +22,27 @@
 
 Before initiating the migration, the operator must complete the following checklist:
 
-- [ ] **Owner Authorization Confirmed:** Owner has signed Decision 4, explicitly citing commit `e2c7e84` and migration hash `C475ED5C...`.
+- [ ] **Owner Authorization Confirmed:** Owner has signed Decision 4, explicitly citing migration hash `D24F82E5...` and rollback hash `10721C96...`.
 - [ ] **Target Project Verified:** Target project reference `<staging-ref>` is verified as non-production in Supabase dashboard.
 - [ ] **Production Boundary Safe:** Target host is confirmed as `db.<staging-ref>.supabase.co`; confirmed distinct from production project.
 - [ ] **Operator Privileges:** Operator has admin/postgres connection credentials for staging.
 - [ ] **Artifact Integrity Verified:** Local migration and rollback files match published SHA-256 hashes.
-- [ ] **Pre-Migration Backup Captured:** Database backup completed, verified, and stored securely.
+- [ ] **Pre-Migration Backup Captured & Verified:** Full logical backup or active PITR snapshot verified.
 
 ---
 
 ## 2. Step-by-Step Staging Execution Runbook
 
-### Step 1: Pre-Migration Schema Snapshot & Backup
-Capture logical backup of the staging database:
+### Step 1: Pre-Migration Schema Snapshot & Backup (R6 Reconciled)
+Capture logical full dump (schema and data) of the staging database:
 ```bash
 # PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
 supabase db dump --project-ref <staging-ref> -f staging_pre_m13_backup_$(date +%Y%m%d_%H%M%S).sql
 ```
-Verify non-zero file size and record backup file SHA-256 hash in execution log.
+*Verification requirement:*  
+- Check non-zero file size.
+- Compute and log file SHA-256 hash.
+- Alternatively, verify that Supabase Point-in-Time Recovery (PITR) or daily automated physical snapshot is healthy in the Supabase Dashboard.
 
 ---
 
@@ -56,7 +61,7 @@ SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public' 
   AND table_name IN ('products', 'orders', 'personalization_templates', 'customization_sessions', 'order_customizations');
 
--- Check 4: Confirm Supabase PostgREST roles exist
+-- Check 4: Confirm Supabase PostgREST roles exist (FAIL-CLOSED REQUIREMENT)
 SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated', 'service_role');
 ```
 *Stop condition:* If `anon`, `authenticated`, or `service_role` are missing, stop immediately.
@@ -75,8 +80,10 @@ psql -h db.<staging-ref>.supabase.co -U postgres -d postgres \
 
 ---
 
-### Step 4: Post-Migration Validation Queries
-Execute verification queries to confirm catalog state:
+### Step 4: Post-Migration Validation Queries (R5 Reconciled)
+Execute verification queries to confirm catalog state across separate testing blocks:
+
+#### 4.1 Schema & RLS Catalog Verification (Admin Session)
 ```sql
 -- PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
 -- 1. Confirm tables created with RLS enabled
@@ -84,8 +91,8 @@ SELECT relname, relrowsecurity
 FROM pg_class 
 WHERE relname IN ('personalization_templates', 'customization_sessions', 'order_customizations');
 
--- 2. Confirm RLS policies created
-SELECT tablename, policyname, cmd, roles 
+-- 2. Confirm RLS policies created with exact definitions
+SELECT tablename, policyname, cmd, roles, qual, with_check 
 FROM pg_policies 
 WHERE schemaname = 'public' 
   AND tablename IN ('personalization_templates', 'customization_sessions', 'order_customizations');
@@ -96,28 +103,58 @@ FROM pg_trigger t
 JOIN pg_class c ON t.tgrelid = c.oid
 JOIN pg_proc p ON t.tgfoid = p.oid
 WHERE p.proname = 'm13_set_updated_at';
+```
 
--- 4. Test PostgREST anonymous permissions (Positive & Negative)
--- Positive: anon can SELECT active templates
+#### 4.2 Role Permission Tests (Isolated Anonymous Session)
+Run in a dedicated `psql` session to prevent transaction abort from blocking subsequent checks:
+```sql
+-- PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
+-- Positive Test: anon can read active templates
 SET ROLE anon;
 SELECT count(*) FROM public.personalization_templates WHERE is_active = true;
+RESET ROLE;
 
--- Negative: anon CANNOT SELECT customization_sessions or order_customizations
--- (Expected error: permission denied for table ...)
-SELECT * FROM public.customization_sessions;
-SELECT * FROM public.order_customizations;
+-- Negative Test Block (Wrapped in PL/pgSQL to catch expected denial safely):
+DO $$
+BEGIN
+    SET ROLE anon;
+    PERFORM * FROM public.customization_sessions;
+    RAISE EXCEPTION 'Security Breach: anon was able to query customization_sessions!';
+EXCEPTION WHEN insufficient_privilege THEN
+    RESET ROLE;
+    RAISE NOTICE 'Access safely denied to customization_sessions for anon role.';
+END $$;
+
+DO $$
+BEGIN
+    SET ROLE anon;
+    PERFORM * FROM public.order_customizations;
+    RAISE EXCEPTION 'Security Breach: anon was able to query order_customizations!';
+EXCEPTION WHEN insufficient_privilege THEN
+    RESET ROLE;
+    RAISE NOTICE 'Access safely denied to order_customizations for anon role.';
+END $$;
+```
+
+#### 4.3 Service Role Verification (Isolated Backend Session)
+```sql
+-- PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
+SET ROLE service_role;
+SELECT count(*) FROM public.personalization_templates;
+SELECT count(*) FROM public.customization_sessions;
+SELECT count(*) FROM public.order_customizations;
 RESET ROLE;
 ```
 
 ---
 
-## 3. Rollback Procedure & Stop Conditions
+## 3. Rollback Procedure & Stop Conditions (R4 Reconciled)
 
 ### Stop Conditions:
 Trigger immediate rollback if:
-1. Preflight script raises an unhandled exception or column mismatch error.
+1. Role preflight guard fails (`Required Supabase role(s) do not exist`).
 2. Migration execution aborts before `COMMIT`.
-3. PostgREST anonymous permissions test allows unauthorized query of `customization_sessions` or `order_customizations`.
+3. Anonymous role test allows unauthorized query of `customization_sessions` or `order_customizations`.
 4. RLS policies fail to reflect in PostgREST cache.
 
 ### Rollback Execution:
@@ -152,4 +189,3 @@ Upon completion of the staging migration run, the operator must record:
 3. Verification query results.
 4. Backup artifact SHA-256 hash.
 5. Report results to platform owner and halt operations. **DO NOT PROCEED TO PHASE 1 APPLICATION ENGINEERING.**
-

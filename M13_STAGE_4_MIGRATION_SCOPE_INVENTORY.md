@@ -1,58 +1,118 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Migration Scope Inventory
+# Subsystem M13 Stage 4: Migration Scope Inventory (Remediated v2.0)
 
 **Document ID:** `JCCF-M13-STAGE-4-SCOPE-INV`  
-**Date:** 13 November 2026 (2026-11-13T01:35:00+08:00)  
+**Version:** 2.0 (Post-Review Reconciliation)  
+**Date:** 13 November 2026 (2026-11-13T01:55:00+08:00)  
 **Status:** REFERENCE INVENTORY — EXECUTION STRICTLY PROHIBITED  
-**Migration Artifact:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `C475ED5C5668179789236F762FC1C04AA9B085F2B7B42E3C08724D0AB62028C9`)  
-**Rollback Artifact:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `897FDAB8EC808FB989258C361F712A4D522E2C1BCE80A4460BB2A7131A7F37C6`)  
+**Migration Artifact:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `D24F82E587E31C238317D207ACB377DE5328C4A845FADF651598E25F266CECFE`)  
+**Rollback Artifact:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `10721C96BDDDDEBFF2C1D8FAB60FC4D22EFB663B2BDBF191DA9611F3992A7960`)  
 
 ---
 
-## 1. Object-by-Object Migration Inventory
+## 1. Table & Column Definitions (Exact Column Counts)
 
-| Object Type | Schema | Object Name | Operation | Existing State Assumption | Dependencies | Security Impact | Rollback Behavior | Source SQL Location |
-|---|---|---|---|---|---|---|---|---|
-| **Trigger Function** | `public` | `m13_set_updated_at()` | `CREATE FUNCTION` (Conditional via PL/pgSQL) | Assumes zero non-M13 0-arg function exists with same name. If exists, definition must match. | `plpgsql` language, core PostgreSQL | Internal utility; updates timestamp. | Dropped with `RESTRICT` if 0 triggers reference it. | Lines 24–79 |
-| **Preflight Guard** | `public` | `personalization_templates` schema check | Validation block (`DO $$`) | If table exists, all 9 columns, types, nullability, and PK must match M13 contract. | `information_schema`, `pg_constraint` | Prevents corrupting non-compliant table. | N/A (read-only validation) | Lines 86–124 |
-| **Preflight Guard** | `public` | `customization_sessions` schema check | Validation block (`DO $$`) | If table exists, all 10 columns, types, nullability, and PK must match M13 contract. | `information_schema`, `pg_constraint` | Prevents corrupting non-compliant table. | N/A (read-only validation) | Lines 129–161 |
-| **Preflight Guard** | `public` | `order_customizations` schema check | Validation block (`DO $$`) | If table exists, all 14 columns, types, nullability, and PK must match M13 contract. | `information_schema`, `pg_constraint` | Prevents corrupting non-compliant table. | N/A (read-only validation) | Lines 166–201 |
-| **Table** | `public` | `personalization_templates` | `CREATE TABLE IF NOT EXISTS` | Fresh table creation or idempotent reuse of compliant table. | `gen_random_uuid()` (PG 13+ native) | Public read active rows; service_role write. | Dropped via `DROP TABLE ... RESTRICT`. | Lines 207–218 |
-| **Unique Constraint** | `public` | `uq_personalization_template_version` | `CONSTRAINT UNIQUE` on `(product_id, version)` | Ensures one active schema version per product. | `personalization_templates` | Integrity enforcement. | Dropped with table. | Line 217 |
-| **Foreign Key** | `public` | `fk_personalization_templates_product` | `ALTER TABLE ADD CONSTRAINT` (Conditional) | Attached if `public.products` table exists; verifies cols and delete `RESTRICT` / update `CASCADE`. | `public.products(id)` | Enforces referential integrity with platform products. | Severed explicitly via `ALTER TABLE DROP CONSTRAINT`. | Lines 224–273 |
-| **Table** | `public` | `customization_sessions` | `CREATE TABLE IF NOT EXISTS` | Fresh table creation or idempotent reuse of compliant table. | `personalization_templates(id)` | High: Transient customer intake data; anonymous guest access. | Dropped via `DROP TABLE ... RESTRICT`. | Lines 278–293 |
-| **Check Constraint** | `public` | `chk_customization_session_status` | `CHECK` constraint on `status` | Restricts statuses to `('draft', 'preview_generated', 'checkout_pending', 'converted', 'abandoned', 'expired')`. | `customization_sessions` | State machine integrity. | Dropped with table. | Lines 290–292 |
-| **Index** | `public` | `idx_customization_sessions_token_hash` | `CREATE INDEX IF NOT EXISTS` | Hash-based O(1) session lookup. | `customization_sessions(token_hash)` | Fast retrieval for guest intake without logging token. | Dropped with table. | Line 295 |
-| **Index** | `public` | `idx_customization_sessions_template_id` | `CREATE INDEX IF NOT EXISTS` | FK performance index. | `customization_sessions(template_id)` | Query performance. | Dropped with table. | Line 296 |
-| **Partial Index** | `public` | `idx_customization_sessions_expires_at` | `CREATE INDEX IF NOT EXISTS` (Partial) | Speeds up TTL expiration worker on draft sessions. | `customization_sessions(expires_at)` WHERE `status = 'draft'` | Query performance. | Dropped with table. | Line 297 |
-| **Table** | `public` | `order_customizations` | `CREATE TABLE IF NOT EXISTS` | Fresh table creation or idempotent reuse of compliant table. | `customization_sessions(id)` | High: Fulfillment records linking orders to rendered PDFs and download tokens. | Dropped via `DROP TABLE ... RESTRICT`. | Lines 304–324 |
-| **Unique Constraint** | `public` | `uq_order_customization_order` | `CONSTRAINT UNIQUE` on `(order_id)` | Enforces exactly 1 customization per order. | `order_customizations(order_id)` | Architectural invariant. | Dropped with table. | Line 320 |
-| **Check Constraint** | `public` | `chk_order_customization_status` | `CHECK` constraint on `render_status` | Restricts statuses to `('pending', 'processing', 'completed', 'failed', 'qel_rejected', 'refunded', 'revoked')`. | `order_customizations` | State machine integrity. | Dropped with table. | Lines 321–323 |
-| **Index** | `public` | `idx_order_customization_order` | `CREATE INDEX IF NOT EXISTS` | Fast lookup by platform order ID. | `order_customizations(order_id)` | Query performance. | Dropped with table. | Line 326 |
-| **Index** | `public` | `idx_order_download_token_hash` | `CREATE INDEX IF NOT EXISTS` | Fast lookup by hashed download token. | `order_customizations(download_token_hash)` | Download gate security. | Dropped with table. | Line 327 |
-| **Foreign Key** | `public` | `fk_order_customizations_order` | `ALTER TABLE ADD CONSTRAINT` (Conditional) | Attached if `public.orders` exists; verifies cols and delete `CASCADE`. | `public.orders(id)` | Referential integrity. | Severed explicitly via `ALTER TABLE DROP CONSTRAINT`. | Lines 333–380 |
-| **Trigger** | `public` | `trg_personalization_templates_updated_at` | `CREATE TRIGGER` (Protected) | Before update trigger setting `updated_at`. Verifies procedure OID. | `personalization_templates`, `m13_set_updated_at()` | Automatically maintains audit timestamps. | Dropped via `DROP TRIGGER IF EXISTS`. | Lines 386–420 |
-| **Trigger** | `public` | `trg_customization_sessions_updated_at` | `CREATE TRIGGER` (Protected) | Before update trigger setting `updated_at`. Verifies procedure OID. | `customization_sessions`, `m13_set_updated_at()` | Automatically maintains audit timestamps. | Dropped via `DROP TRIGGER IF EXISTS`. | Lines 423–446 |
-| **Trigger** | `public` | `trg_order_customizations_updated_at` | `CREATE TRIGGER` (Protected) | Before update trigger setting `updated_at`. Verifies procedure OID. | `order_customizations`, `m13_set_updated_at()` | Automatically maintains audit timestamps. | Dropped via `DROP TRIGGER IF EXISTS`. | Lines 449–472 |
-| **RLS Enablement** | `public` | `personalization_templates` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` | Row level security active. | Core PostgreSQL security | Enforces access policies. | Disabled if table dropped. | Line 478 |
-| **RLS Enablement** | `public` | `customization_sessions` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` | Row level security active. | Core PostgreSQL security | Enforces access policies. | Disabled if table dropped. | Line 479 |
-| **RLS Enablement** | `public` | `order_customizations` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` | Row level security active. | Core PostgreSQL security | Enforces access policies. | Disabled if table dropped. | Line 480 |
-| **Privileges Revoke/Grant** | `public` | Table privileges for `anon`, `authenticated`, `service_role` | `REVOKE ALL` / `GRANT` (Conditional on role existence) | Revokes direct table privileges on sessions and orders from public roles; grants SELECT on templates. | `pg_roles` | High: Enforces least privilege boundary. | Reverted on drop. | Lines 485–506 |
-| **RLS Policy** | `public` | `"Public read active templates"` | `CREATE POLICY` (Protected) | SELECT allowed for `anon` and `authenticated` where `is_active = true`. | `personalization_templates` | Allows public catalog browsing. | Dropped via `DROP POLICY IF EXISTS`. | Lines 519–555 |
-| **RLS Policy** | `public` | `"Service role full access on personalization_templates"` | `CREATE POLICY` (Protected) | ALL allowed for `service_role` (`USING (true) WITH CHECK (true)`). | `personalization_templates` | Backend administrative access. | Dropped via `DROP POLICY IF EXISTS`. | Lines 558–588 |
-| **RLS Policy** | `public` | `"Service role full access on customization_sessions"` | `CREATE POLICY` (Protected) | ALL allowed for `service_role` (`USING (true) WITH CHECK (true)`). | `customization_sessions` | Backend intake processor access. | Dropped via `DROP POLICY IF EXISTS`. | Lines 591–621 |
-| **RLS Policy** | `public` | `"Service role full access on order_customizations"` | `CREATE POLICY` (Protected) | ALL allowed for `service_role` (`USING (true) WITH CHECK (true)`). | `order_customizations` | Backend fulfillment worker access. | Dropped via `DROP POLICY IF EXISTS`. | Lines 624–654 |
+### Table 1: `public.personalization_templates` (**9 Columns**)
+- `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` (NOT NULL)
+- `product_id UUID NOT NULL`
+- `version VARCHAR(20) NOT NULL`
+- `schema_definition JSONB NOT NULL`
+- `layout_template_path TEXT NOT NULL`
+- `default_page_count INT NOT NULL DEFAULT 24`
+- `is_active BOOLEAN NOT NULL DEFAULT true`
+- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- *Constraints:*
+  - Primary Key: `personalization_templates_pkey` on `(id)` (Constraint-enforcing index automatically created).
+  - Unique Constraint: `uq_personalization_template_version` on `(product_id, version)` (Constraint-enforcing index automatically created).
+  - Outbound Foreign Key (Conditional): `fk_personalization_templates_product` on `product_id` references `public.products(id)` ON DELETE RESTRICT ON UPDATE CASCADE (Created only if `public.products` exists).
+
+### Table 2: `public.customization_sessions` (**11 Columns**)
+- `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` (NOT NULL)
+- `template_id UUID NOT NULL REFERENCES public.personalization_templates(id) ON DELETE RESTRICT`
+- `token_hash VARCHAR(64) UNIQUE NOT NULL`
+- `current_step VARCHAR(50) NOT NULL DEFAULT 'pet_type'`
+- `answers JSONB NOT NULL DEFAULT '{}'::jsonb`
+- `uploaded_assets JSONB NOT NULL DEFAULT '[]'::jsonb`
+- `preview_artifact_path TEXT NULL`
+- `status VARCHAR(30) NOT NULL DEFAULT 'draft'`
+- `expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '30 days')`
+- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- *Constraints:*
+  - Primary Key: `customization_sessions_pkey` on `(id)` (Constraint-enforcing index automatically created).
+  - Unique Constraint: `customization_sessions_token_hash_key` on `(token_hash)` (Constraint-enforcing index automatically created).
+  - Inbound Foreign Key: `customization_sessions_template_id_fkey` references `public.personalization_templates(id)` ON DELETE RESTRICT.
+  - Check Constraint: `chk_customization_session_status` CHECK `(status IN ('draft', 'preview_generated', 'checkout_pending', 'converted', 'abandoned', 'expired'))`.
+
+### Table 3: `public.order_customizations` (**14 Columns**)
+- `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` (NOT NULL)
+- `order_id UUID NOT NULL`
+- `session_id UUID NOT NULL REFERENCES public.customization_sessions(id) ON DELETE RESTRICT`
+- `rendered_artifact_path TEXT NULL`
+- `render_status VARCHAR(30) NOT NULL DEFAULT 'pending'`
+- `render_attempts INT NOT NULL DEFAULT 0`
+- `render_error_log TEXT NULL`
+- `runtime_qel_results JSONB NOT NULL DEFAULT '{}'::jsonb`
+- `download_token_hash VARCHAR(64) UNIQUE NOT NULL`
+- `download_count INT NOT NULL DEFAULT 0`
+- `download_expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '90 days')`
+- `revoked_at TIMESTAMPTZ NULL`
+- `revocation_reason VARCHAR(100) NULL`
+- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+- *Constraints:*
+  - Primary Key: `order_customizations_pkey` on `(id)` (Constraint-enforcing index automatically created).
+  - Unique Constraint: `uq_order_customization_order` on `(order_id)` (Constraint-enforcing index automatically created).
+  - Unique Constraint: `order_customizations_download_token_hash_key` on `(download_token_hash)` (Constraint-enforcing index automatically created).
+  - Inbound Foreign Key: `order_customizations_session_id_fkey` references `public.customization_sessions(id)` ON DELETE RESTRICT.
+  - Outbound Foreign Key (Conditional): `fk_order_customizations_order` on `order_id` references `public.orders(id)` ON DELETE CASCADE (Created only if `public.orders` exists).
+  - Check Constraint: `chk_order_customization_status` CHECK `(render_status IN ('pending', 'processing', 'completed', 'failed', 'qel_rejected', 'refunded', 'revoked'))`.
 
 ---
 
-## 2. Destructive Operations & Shared Object Analysis
+## 2. Index Classification & Inventory
 
-1. **Destructive SQL Analysis:**
-   - **Zero DROP Operations:** The migration script contains zero `DROP TABLE`, `DROP COLUMN`, `DROP CONSTRAINT`, or `DROP FUNCTION` statements.
-   - **Zero CASCADE Operations:** The migration script contains zero `CASCADE` drops.
-   - **Explicit Revocations:** Table privileges on `customization_sessions` and `order_customizations` are explicitly revoked from `anon` and `authenticated`. This is intentional and mandatory to guarantee zero guest data exposure.
-2. **Shared Object Collision Safeguards:**
-   - **Shared Function Protection:** Migration does NOT touch or overwrite `public.set_current_timestamp_updated_at()`. It introduces an M13-namespaced function `public.m13_set_updated_at()`.
-   - **Collision-Safe Inspection:** Before creating `public.m13_set_updated_at()`, the migration queries `pg_proc` for exact argument counts and body definitions. If an incompatible function exists, it aborts via `RAISE EXCEPTION`.
-   - **Pre-Existing Foreign Key Protection:** Foreign keys to `public.products` and `public.orders` are added only if those tables exist, and their exact constraint properties are verified before reuse.
+| Index Name | Table | Columns / Expressions | Classification | Creation Mode |
+|---|---|---|---|---|
+| `personalization_templates_pkey` | `personalization_templates` | `(id)` | Primary Key Index | Automatic (PostgreSQL constraint engine) |
+| `uq_personalization_template_version` | `personalization_templates` | `(product_id, version)` | Unique Constraint Index | Automatic (PostgreSQL constraint engine) |
+| `customization_sessions_pkey` | `customization_sessions` | `(id)` | Primary Key Index | Automatic (PostgreSQL constraint engine) |
+| `customization_sessions_token_hash_key`| `customization_sessions` | `(token_hash)` | Unique Constraint Index | Automatic (PostgreSQL constraint engine) |
+| `order_customizations_pkey` | `order_customizations` | `(id)` | Primary Key Index | Automatic (PostgreSQL constraint engine) |
+| `uq_order_customization_order` | `order_customizations` | `(order_id)` | Unique Constraint Index | Automatic (PostgreSQL constraint engine) |
+| `order_customizations_download_token_hash_key` | `order_customizations` | `(download_token_hash)` | Unique Constraint Index | Automatic (PostgreSQL constraint engine) |
+| `idx_customization_sessions_token_hash`| `customization_sessions` | `(token_hash)` | Secondary Performance Index | Explicit `CREATE INDEX IF NOT EXISTS` (Line 310) |
+| `idx_customization_sessions_template_id` | `customization_sessions` | `(template_id)` | Secondary FK Index | Explicit `CREATE INDEX IF NOT EXISTS` (Line 311) |
+| `idx_customization_sessions_expires_at` | `customization_sessions` | `(expires_at)` WHERE `status = 'draft'` | Partial Performance Index | Explicit `CREATE INDEX IF NOT EXISTS` (Line 312) |
+| `idx_order_customization_order` | `order_customizations` | `(order_id)` | Secondary Query Index | Explicit `CREATE INDEX IF NOT EXISTS` (Line 341) |
+| `idx_order_download_token_hash` | `order_customizations` | `(download_token_hash)` | Secondary Security Index | Explicit `CREATE INDEX IF NOT EXISTS` (Line 342) |
 
+---
+
+## 3. Trigger Function, Triggers & Policies
+
+* **Trigger Function:** `public.m13_set_updated_at()` (Lines 68–75)
+  - Dedicated 0-argument PL/pgSQL function setting `NEW.updated_at = now()`.
+* **Triggers (3):**
+  - `trg_personalization_templates_updated_at` on `personalization_templates` (Lines 432–435).
+  - `trg_customization_sessions_updated_at` on `customization_sessions` (Lines 459–462).
+  - `trg_order_customizations_updated_at` on `order_customizations` (Lines 485–488).
+* **Row Level Security Policies (4) (Zero `TO public` fallback):**
+  - `"Public read active templates"` on `personalization_templates` FOR SELECT TO `anon, authenticated` (`USING (is_active = true)`) (Lines 552–556).
+  - `"Service role full access on personalization_templates"` FOR ALL TO `service_role` (`USING (true) WITH CHECK (true)`) (Lines 580–583).
+  - `"Service role full access on customization_sessions"` FOR ALL TO `service_role` (`USING (true) WITH CHECK (true)`) (Lines 606–609).
+  - `"Service role full access on order_customizations"` FOR ALL TO `service_role` (`USING (true) WITH CHECK (true)`) (Lines 632–635).
+
+---
+
+## 4. Destructive Operations & Shared Object Analysis
+
+1. **Destructive Operations in Migration:**
+   - Zero `DROP` or `TRUNCATE` statements exist in forward migration.
+   - Privileges explicitly revoked from `anon` and `authenticated` on `customization_sessions` and `order_customizations` to enforce security boundary.
+2. **Rollback Ownership Safety:**
+   - Triggers verified against procedure OID of `m13_set_updated_at()` before dropping; aborts safely on clash.
+   - Policies verified against M13 command and qualifiers before dropping; aborts safely on clash.
+   - All tables dropped via `DROP TABLE ... RESTRICT` (0 `CASCADE`).
+   - Function `public.m13_set_updated_at()` dropped via `RESTRICT` only after confirming zero external trigger dependencies.
