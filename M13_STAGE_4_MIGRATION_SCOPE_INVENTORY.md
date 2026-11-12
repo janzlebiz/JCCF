@@ -55,3 +55,4 @@
    - **Shared Function Protection:** Migration does NOT touch or overwrite `public.set_current_timestamp_updated_at()`. It introduces an M13-namespaced function `public.m13_set_updated_at()`.
    - **Collision-Safe Inspection:** Before creating `public.m13_set_updated_at()`, the migration queries `pg_proc` for exact argument counts and body definitions. If an incompatible function exists, it aborts via `RAISE EXCEPTION`.
    - **Pre-Existing Foreign Key Protection:** Foreign keys to `public.products` and `public.orders` are added only if those tables exist, and their exact constraint properties are verified before reuse.
+

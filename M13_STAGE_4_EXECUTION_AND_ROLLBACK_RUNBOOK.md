@@ -152,3 +152,4 @@ Upon completion of the staging migration run, the operator must record:
 3. Verification query results.
 4. Backup artifact SHA-256 hash.
 5. Report results to platform owner and halt operations. **DO NOT PROCEED TO PHASE 1 APPLICATION ENGINEERING.**
+

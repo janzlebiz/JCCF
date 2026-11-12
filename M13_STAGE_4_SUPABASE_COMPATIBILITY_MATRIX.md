@@ -35,3 +35,4 @@
    Because Subsystem M13 uses the native `gen_random_uuid()` function introduced in PostgreSQL 13, it avoids the common Supabase migration pitfall of conflicting `CREATE EXTENSION IF NOT EXISTS pgcrypto` commands.
 3. **Standalone Deployment Capability:**
    Because M13 conditionally attaches foreign keys to `products` and `orders`, it can be deployed to staging even before core platform commerce tables are migrated, without causing DDL failure.
+
