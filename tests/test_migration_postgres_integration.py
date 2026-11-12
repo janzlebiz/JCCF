@@ -897,6 +897,165 @@ class PostgresIntegrationRunner:
         self.results.append(self.run_scenario("PG-INT-20", "Coupled migration with parent tables (R7 verification)", setup_20, test_20))
 
         # ----------------------------------------------------------------------
+        # Scenario 21: Conflicting Policy Roles Aborts Rollback (F1 Verification)
+        # ----------------------------------------------------------------------
+        def setup_21(cur):
+            cur.execute(self.migration_sql)
+            # Recreate policy with altered role (e.g. only anon, missing authenticated)
+            cur.execute("""
+                DROP POLICY "Public read active templates" ON public.personalization_templates;
+                CREATE POLICY "Public read active templates"
+                ON public.personalization_templates FOR SELECT
+                TO anon USING (is_active = true);
+            """)
+
+        def test_21(conn):
+            conn.autocommit = False
+            cur = conn.cursor()
+            try:
+                cur.execute(self.rollback_sql)
+                conn.commit()
+                return "FAIL", "Rollback proceeded despite altered policy role bindings", "Expected rollback abort"
+            except Exception as e:
+                conn.rollback()
+                cur.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'personalization_templates';")
+                count = cur.fetchone()[0]
+                if "definition mismatch" in str(e) and count == 1:
+                    return "PASS", "Rollback aborted safely on policy role mismatch; table preserved", str(e)
+                return "FAIL", f"Unexpected error or table dropped: {e}, count={count}", str(e)
+
+        self.results.append(self.run_scenario("PG-INT-21", "Conflicting policy roles aborts rollback (F1 verification)", setup_21, test_21))
+
+        # ----------------------------------------------------------------------
+        # Scenario 22: Trigger Exists While Function Absent Aborts Rollback (F2 Verification)
+        # ----------------------------------------------------------------------
+        def setup_22(cur):
+            cur.execute(self.migration_sql)
+            # Drop the M13 function with CASCADE or temporarily replace it with another function
+            cur.execute("""
+                CREATE OR REPLACE FUNCTION public.other_func() RETURNS TRIGGER AS $$
+                BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;
+
+                DROP TRIGGER trg_personalization_templates_updated_at ON public.personalization_templates;
+                CREATE TRIGGER trg_personalization_templates_updated_at
+                BEFORE UPDATE ON public.personalization_templates
+                FOR EACH ROW EXECUTE FUNCTION public.other_func();
+
+                DROP FUNCTION public.m13_set_updated_at() CASCADE;
+            """)
+
+        def test_22(conn):
+            conn.autocommit = False
+            cur = conn.cursor()
+            try:
+                cur.execute(self.rollback_sql)
+                conn.commit()
+                return "FAIL", "Rollback proceeded despite trigger existing while M13 function missing", "Expected abort"
+            except Exception as e:
+                conn.rollback()
+                cur.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'personalization_templates';")
+                count = cur.fetchone()[0]
+                if "public.m13_set_updated_at() is missing" in str(e) and count == 1:
+                    return "PASS", "Rollback aborted safely when trigger exists but function missing; table preserved", str(e)
+                return "FAIL", f"Unexpected error or table dropped: {e}, count={count}", str(e)
+
+        self.results.append(self.run_scenario("PG-INT-22", "Trigger exists while function absent aborts rollback (F2 verification)", setup_22, test_22))
+
+        # ----------------------------------------------------------------------
+        # Scenario 23: Direct Role Permissions In Dedicated Sessions (F3 Verification)
+        # ----------------------------------------------------------------------
+        def setup_23(cur):
+            cur.execute(self.migration_sql)
+
+        def test_23(conn):
+            # Test direct role permissions outside PL/pgSQL using SET ROLE in clean transaction blocks
+            conn.autocommit = False
+            cur = conn.cursor()
+
+            # 1. anon can SELECT active templates
+            cur.execute("SET ROLE anon;")
+            cur.execute("SELECT count(*) FROM public.personalization_templates WHERE is_active = true;")
+            anon_templates = cur.fetchone()[0]
+
+            # 2. anon CANNOT SELECT customization_sessions
+            anon_denied_sessions = False
+            try:
+                cur.execute("SELECT * FROM public.customization_sessions;")
+            except Exception as e:
+                anon_denied_sessions = True
+                conn.rollback()
+
+            # 3. authenticated can SELECT active templates
+            cur.execute("SET ROLE authenticated;")
+            cur.execute("SELECT count(*) FROM public.personalization_templates WHERE is_active = true;")
+            auth_templates = cur.fetchone()[0]
+
+            # 4. authenticated CANNOT SELECT order_customizations
+            auth_denied_orders = False
+            try:
+                cur.execute("SELECT * FROM public.order_customizations;")
+            except Exception as e:
+                auth_denied_orders = True
+                conn.rollback()
+
+            # 5. service_role has full access across all 3 tables
+            cur.execute("SET ROLE service_role;")
+            cur.execute("SELECT count(*) FROM public.personalization_templates;")
+            sr_t = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM public.customization_sessions;")
+            sr_s = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM public.order_customizations;")
+            sr_o = cur.fetchone()[0]
+
+            cur.execute("RESET ROLE;")
+            conn.commit()
+
+            if anon_templates >= 0 and anon_denied_sessions and auth_templates >= 0 and auth_denied_orders and sr_t >= 0 and sr_s >= 0 and sr_o >= 0:
+                return "PASS", "Direct role access verified: anon/auth read active templates only; service_role full access", f"anon_t: {anon_templates}, sr_t: {sr_t}"
+            return "FAIL", f"Role permission verification failed. anon_denied={anon_denied_sessions}, auth_denied={auth_denied_orders}", ""
+
+        self.results.append(self.run_scenario("PG-INT-23", "Direct role permissions in dedicated sessions (F3 verification)", setup_23, test_23))
+
+        # ----------------------------------------------------------------------
+        # Scenario 24: Missing Required Column in order_customizations Rejection (F4 Verification)
+        # ----------------------------------------------------------------------
+        def setup_24(cur):
+            # Create order_customizations missing revocation_reason column
+            cur.execute("""
+                CREATE TABLE public.order_customizations (
+                    id UUID PRIMARY KEY,
+                    order_id UUID NOT NULL,
+                    session_id UUID NOT NULL,
+                    rendered_artifact_path TEXT,
+                    render_status VARCHAR(30) NOT NULL,
+                    render_attempts INT NOT NULL,
+                    render_error_log TEXT,
+                    runtime_qel_results JSONB NOT NULL,
+                    download_token_hash VARCHAR(64) NOT NULL,
+                    download_count INT NOT NULL,
+                    download_expires_at TIMESTAMPTZ NOT NULL,
+                    revoked_at TIMESTAMPTZ,
+                    created_at TIMESTAMPTZ NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL
+                );
+            """)
+
+        def test_24(conn):
+            conn.autocommit = False
+            cur = conn.cursor()
+            try:
+                cur.execute(self.migration_sql)
+                conn.commit()
+                return "FAIL", "Migration should have aborted on missing revocation_reason column", "No exception"
+            except Exception as e:
+                conn.rollback()
+                if "incompatible column specification: revocation_reason VARCHAR(100) NULL" in str(e):
+                    return "PASS", "Missing 15th column (revocation_reason) safely rejected with explicit diagnostic", str(e)
+                return "FAIL", f"Unexpected error message: {e}", str(e)
+
+        self.results.append(self.run_scenario("PG-INT-24", "Missing column in order_customizations rejection (F4 verification)", setup_24, test_24))
+
+        # ----------------------------------------------------------------------
         # Scenario 15: Sentinel Isolation Verification (R5 Regression Protection)
         # ----------------------------------------------------------------------
         def test_15(conn):

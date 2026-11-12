@@ -37,7 +37,7 @@ ALTER TABLE IF EXISTS public.personalization_templates
 -- 2. Drop M13-Specific Triggers (Verified Procedure OID & Table Scope)
 -- ==============================================================================
 -- Before dropping any M13 trigger, verify that it references public.m13_set_updated_at().
--- If an unrelated same-named trigger exists pointing elsewhere, abort safely.
+-- Fail-closed requirement: If trigger exists but function is missing, or OID differs, abort safely.
 DO $$
 DECLARE
     v_proc_oid OID;
@@ -55,13 +55,17 @@ BEGIN
           AND t.tgname = 'trg_order_customizations_updated_at'
           AND NOT t.tgisinternal
     ) THEN
+        IF v_proc_oid IS NULL THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Trigger trg_order_customizations_updated_at exists but public.m13_set_updated_at() is missing. Aborting to prevent destroying foreign object.';
+        END IF;
+
         SELECT t.tgfoid INTO v_tgfoid
         FROM pg_trigger t
         WHERE t.tgrelid = 'public.order_customizations'::regclass
           AND t.tgname = 'trg_order_customizations_updated_at'
           AND NOT t.tgisinternal;
 
-        IF v_proc_oid IS NOT NULL AND v_tgfoid != v_proc_oid THEN
+        IF v_tgfoid != v_proc_oid THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Trigger trg_order_customizations_updated_at references unrelated procedure OID %. Aborting to prevent destroying foreign object.', v_tgfoid;
         END IF;
         DROP TRIGGER trg_order_customizations_updated_at ON public.order_customizations;
@@ -75,13 +79,17 @@ BEGIN
           AND t.tgname = 'trg_customization_sessions_updated_at'
           AND NOT t.tgisinternal
     ) THEN
+        IF v_proc_oid IS NULL THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Trigger trg_customization_sessions_updated_at exists but public.m13_set_updated_at() is missing. Aborting to prevent destroying foreign object.';
+        END IF;
+
         SELECT t.tgfoid INTO v_tgfoid
         FROM pg_trigger t
         WHERE t.tgrelid = 'public.customization_sessions'::regclass
           AND t.tgname = 'trg_customization_sessions_updated_at'
           AND NOT t.tgisinternal;
 
-        IF v_proc_oid IS NOT NULL AND v_tgfoid != v_proc_oid THEN
+        IF v_tgfoid != v_proc_oid THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Trigger trg_customization_sessions_updated_at references unrelated procedure OID %. Aborting to prevent destroying foreign object.', v_tgfoid;
         END IF;
         DROP TRIGGER trg_customization_sessions_updated_at ON public.customization_sessions;
@@ -95,13 +103,17 @@ BEGIN
           AND t.tgname = 'trg_personalization_templates_updated_at'
           AND NOT t.tgisinternal
     ) THEN
+        IF v_proc_oid IS NULL THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Trigger trg_personalization_templates_updated_at exists but public.m13_set_updated_at() is missing. Aborting to prevent destroying foreign object.';
+        END IF;
+
         SELECT t.tgfoid INTO v_tgfoid
         FROM pg_trigger t
         WHERE t.tgrelid = 'public.personalization_templates'::regclass
           AND t.tgname = 'trg_personalization_templates_updated_at'
           AND NOT t.tgisinternal;
 
-        IF v_proc_oid IS NOT NULL AND v_tgfoid != v_proc_oid THEN
+        IF v_tgfoid != v_proc_oid THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Trigger trg_personalization_templates_updated_at references unrelated procedure OID %. Aborting to prevent destroying foreign object.', v_tgfoid;
         END IF;
         DROP TRIGGER trg_personalization_templates_updated_at ON public.personalization_templates;
@@ -112,11 +124,12 @@ END $$;
 -- ==============================================================================
 -- 3. Drop M13-Specific Row Level Security Policies (Verified Definition)
 -- ==============================================================================
--- Before dropping any policy, verify its command and qualifier match M13 definition.
--- If an unrelated same-named policy exists, abort safely.
+-- Before dropping any policy, verify its command, exact role bindings, and qualifiers.
+-- If an unrelated or altered same-named policy exists, abort safely.
 DO $$
 DECLARE
     v_cmd TEXT;
+    v_roles NAME[];
     v_qual TEXT;
     v_with_check TEXT;
 BEGIN
@@ -127,14 +140,18 @@ BEGIN
           AND tablename = 'personalization_templates' 
           AND policyname = 'Public read active templates'
     ) THEN
-        SELECT cmd, qual, with_check INTO v_cmd, v_qual, v_with_check
+        SELECT cmd, roles, qual, with_check INTO v_cmd, v_roles, v_qual, v_with_check
         FROM pg_policies
         WHERE schemaname = 'public' 
           AND tablename = 'personalization_templates' 
           AND policyname = 'Public read active templates';
 
-        IF v_cmd != 'SELECT' OR (v_qual != '(is_active = true)' AND v_qual != 'is_active') OR v_with_check IS NOT NULL THEN
-            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Public read active templates" definition mismatch (cmd %, qual %, with_check %). Aborting.', v_cmd, v_qual, v_with_check;
+        IF v_cmd != 'SELECT' 
+           OR NOT (v_roles @> ARRAY['anon'::name] AND v_roles @> ARRAY['authenticated'::name])
+           OR (v_qual != '(is_active = true)' AND v_qual != 'is_active') 
+           OR v_with_check IS NOT NULL THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Public read active templates" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.', 
+                v_cmd, v_roles, v_qual, v_with_check;
         END IF;
         DROP POLICY "Public read active templates" ON public.personalization_templates;
         RAISE NOTICE 'Policy "Public read active templates" verified and dropped.';
@@ -147,14 +164,18 @@ BEGIN
           AND tablename = 'personalization_templates' 
           AND policyname = 'Service role full access on personalization_templates'
     ) THEN
-        SELECT cmd, qual, with_check INTO v_cmd, v_qual, v_with_check
+        SELECT cmd, roles, qual, with_check INTO v_cmd, v_roles, v_qual, v_with_check
         FROM pg_policies
         WHERE schemaname = 'public' 
           AND tablename = 'personalization_templates' 
           AND policyname = 'Service role full access on personalization_templates';
 
-        IF v_cmd != 'ALL' OR v_qual != 'true' OR v_with_check != 'true' THEN
-            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on personalization_templates" definition mismatch. Aborting.';
+        IF v_cmd != 'ALL' 
+           OR NOT (v_roles @> ARRAY['service_role'::name]) 
+           OR v_qual != 'true' 
+           OR v_with_check != 'true' THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on personalization_templates" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.',
+                v_cmd, v_roles, v_qual, v_with_check;
         END IF;
         DROP POLICY "Service role full access on personalization_templates" ON public.personalization_templates;
         RAISE NOTICE 'Policy "Service role full access on personalization_templates" verified and dropped.';
@@ -167,14 +188,18 @@ BEGIN
           AND tablename = 'customization_sessions' 
           AND policyname = 'Service role full access on customization_sessions'
     ) THEN
-        SELECT cmd, qual, with_check INTO v_cmd, v_qual, v_with_check
+        SELECT cmd, roles, qual, with_check INTO v_cmd, v_roles, v_qual, v_with_check
         FROM pg_policies
         WHERE schemaname = 'public' 
           AND tablename = 'customization_sessions' 
           AND policyname = 'Service role full access on customization_sessions';
 
-        IF v_cmd != 'ALL' OR v_qual != 'true' OR v_with_check != 'true' THEN
-            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on customization_sessions" definition mismatch. Aborting.';
+        IF v_cmd != 'ALL' 
+           OR NOT (v_roles @> ARRAY['service_role'::name]) 
+           OR v_qual != 'true' 
+           OR v_with_check != 'true' THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on customization_sessions" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.',
+                v_cmd, v_roles, v_qual, v_with_check;
         END IF;
         DROP POLICY "Service role full access on customization_sessions" ON public.customization_sessions;
         RAISE NOTICE 'Policy "Service role full access on customization_sessions" verified and dropped.';
@@ -187,14 +212,18 @@ BEGIN
           AND tablename = 'order_customizations' 
           AND policyname = 'Service role full access on order_customizations'
     ) THEN
-        SELECT cmd, qual, with_check INTO v_cmd, v_qual, v_with_check
+        SELECT cmd, roles, qual, with_check INTO v_cmd, v_roles, v_qual, v_with_check
         FROM pg_policies
         WHERE schemaname = 'public' 
           AND tablename = 'order_customizations' 
           AND policyname = 'Service role full access on order_customizations';
 
-        IF v_cmd != 'ALL' OR v_qual != 'true' OR v_with_check != 'true' THEN
-            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on order_customizations" definition mismatch. Aborting.';
+        IF v_cmd != 'ALL' 
+           OR NOT (v_roles @> ARRAY['service_role'::name]) 
+           OR v_qual != 'true' 
+           OR v_with_check != 'true' THEN
+            RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on order_customizations" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.',
+                v_cmd, v_roles, v_qual, v_with_check;
         END IF;
         DROP POLICY "Service role full access on order_customizations" ON public.order_customizations;
         RAISE NOTICE 'Policy "Service role full access on order_customizations" verified and dropped.';
