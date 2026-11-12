@@ -1,8 +1,9 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13: Staging Migration Preflight, Verification & Rollback Package
+# Subsystem M13: Staging Migration Preflight, Verification & Rollback Package (v2.0)
 
 **Document ID:** `JCCF-PKG-MIG-001`  
-**Date:** 12 November 2026  
+**Version:** 2.0 (Namespaced Function, Preflight Compatibility Guards, & Restrictive Rollback)  
+**Date:** 13 November 2026  
 **Status:** Preflight Specification & Rollback Procedure (Execution NOT AUTHORIZED)  
 **Target Migration:** `migrations/20261112_001_personalization_engine.sql`  
 **Rollback Script:** `migrations/20261112_001_personalization_engine_rollback.sql`  
@@ -12,25 +13,26 @@
 
 ## 1. Executive Summary
 
-This preflight package prepares all technical requirements for **Decision 4 (Development / Staging Database Migration)** without executing any database statements. It specifies:
-1. Target staging project identity requirements.
-2. Preflight schema and dependency checks.
-3. Pre-migration backup and snapshot recovery methods.
-4. Complete SQL statement diff and privilege audit.
-5. Exact automated rollback procedure.
+This preflight package specifies the technical preconditions, schema compatibility checks, and rollback safety mechanisms for **Decision 4 (Development / Staging Database Migration)**.
+
+Key safety remediations in this version:
+1. **Namespaced Trigger Function:** Migration uses `public.m13_set_updated_at()`, eliminating silent collisions or overwrites of existing shared platform functions.
+2. **Existing-Table Compatibility Preflight:** Explicitly verifies column existence and data types for pre-existing tables before proceeding, rather than blindly relying on `CREATE TABLE IF NOT EXISTS`.
+3. **Fully-Scoped Foreign Key Detection:** Scopes constraint-existence checks to `table_schema`, `table_name`, AND `constraint_name`.
+4. **Restrictive Rollback Drops:** Rollback applies `DROP TABLE ... RESTRICT` (zero `CASCADE`), aborting cleanly if unexpected external dependencies exist.
 
 ---
 
 ## 2. Target Staging Project Identity & Environment Boundaries
 
 Before Decision 4 can be requested or authorized, the platform operator must confirm the target environment variables:
-* **Target Host:** Dedicated Supabase Development/Staging Project (e.g., `db.<project-ref>.supabase.co`).
+* **Target Host:** Dedicated Supabase Development/Staging Project (e.g., `db.<staging-ref>.supabase.co`).
 * **Isolation Rule:** Migration must **NEVER** be applied to a production instance or shared environment.
 * **Service Role Key:** Confined exclusively to local backend migration runner (`psql` or Supabase CLI); never exposed to client apps.
 
 ---
 
-## 3. Preflight Schema Verification & Dependency Checks
+## 3. Preflight Schema Verification & Compatibility Checks
 
 Execute the following diagnostic read-only queries against the staging database prior to running the migration:
 
@@ -38,7 +40,7 @@ Execute the following diagnostic read-only queries against the staging database 
 -- PREFLIGHT CHECK 1: Verify PostgreSQL Version >= 14 (Native gen_random_uuid support)
 SELECT version();
 
--- PREFLIGHT CHECK 2: Verify gen_random_uuid() function availability
+-- PREFLIGHT CHECK 2: Verify native gen_random_uuid() function availability
 -- Note: PostgreSQL 13+ includes gen_random_uuid() natively in the core distribution.
 -- pgcrypto extension is NOT required or created by migration 20261112_001_personalization_engine.sql.
 SELECT gen_random_uuid();
@@ -49,16 +51,30 @@ FROM information_schema.tables
 WHERE table_schema = 'public' 
   AND table_name IN ('products', 'orders', 'personalization_templates', 'customization_sessions', 'order_customizations');
 
--- PREFLIGHT CHECK 4: Check if standard PostgREST roles exist
+-- PREFLIGHT CHECK 4: Existing Table Compatibility Guard (if M13 tables already exist)
+-- Detect incompatible columns, types, or missing critical fields before applying DDL
+SELECT table_name, column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name IN ('personalization_templates', 'customization_sessions', 'order_customizations')
+ORDER BY table_name, ordinal_position;
+
+-- PREFLIGHT CHECK 5: Verify foreign key constraint scope on target tables
+SELECT constraint_name, table_schema, table_name
+FROM information_schema.table_constraints
+WHERE table_schema = 'public'
+  AND table_name IN ('personalization_templates', 'order_customizations')
+  AND constraint_type = 'FOREIGN KEY';
+
+-- PREFLIGHT CHECK 6: Check standard PostgREST roles exist
 SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated', 'service_role');
 ```
 
-### Preflight Invariants
-* **UUID Generation:** `gen_random_uuid()` is natively built into PostgreSQL 13+ (standard in Supabase PostgreSQL 15+). The migration does **not** create or require the `pgcrypto` extension.
-* **Conditional Foreign Keys:**
-  - If `public.products` does not exist, the conditional block skips `fk_personalization_templates_product` without error.
-  - If `public.orders` does not exist, the conditional block skips `fk_order_customizations_order` without error.
-* **Role Permissions:** Standard Supabase roles `anon`, `authenticated`, and `service_role` must exist before running privilege grant/revoke blocks.
+### Preflight Compatibility Invariants
+* **UUID Generation:** Native `gen_random_uuid()` is confirmed operational. `pgcrypto` is not required.
+* **Compatibility Guard:** If `personalization_templates`, `customization_sessions`, or `order_customizations` already exist on the staging database, the migration runs inline PL/pgSQL guards checking required column types (e.g., `schema_definition JSONB`, `token_hash VARCHAR`, `download_token_hash VARCHAR`) and aborts with `RAISE EXCEPTION` if schema drift is detected.
+* **Strict Foreign Key Scoping:** Checks for `fk_personalization_templates_product` and `fk_order_customizations_order` filter strictly by `table_name` to prevent collisions with unrelated constraints on other tables.
+* **Trigger Isolation:** Triggers execute `public.m13_set_updated_at()`, preserving shared functions untouched.
 
 ---
 
@@ -79,21 +95,23 @@ Before applying the migration to staging:
 ## 5. Migration Statement Diff & Privilege Audit
 
 The migration introduces:
-1. `public.personalization_templates` (3 active rows expected for templates):
+1. Trigger Function:
+   - `public.m13_set_updated_at()`: Dedicated M13 trigger function.
+2. `public.personalization_templates`:
    - Table-level `GRANT SELECT ON public.personalization_templates TO anon, authenticated;`.
    - RLS Policy: `USING (is_active = true)`.
-2. `public.customization_sessions`:
+3. `public.customization_sessions`:
    - Table-level `REVOKE ALL ON public.customization_sessions FROM anon, authenticated;`.
    - Table-level `GRANT ALL ON public.customization_sessions TO service_role;`.
    - Public direct PostgREST access is completely blocked (HTTP 401/403).
-3. `public.order_customizations`:
+4. `public.order_customizations`:
    - Table-level `REVOKE ALL ON public.order_customizations FROM anon, authenticated;`.
    - Table-level `GRANT ALL ON public.order_customizations TO service_role;`.
    - Public direct PostgREST access is completely blocked.
-4. Triggers:
-   - `trg_personalization_templates_updated_at`
-   - `trg_customization_sessions_updated_at`
-   - `trg_order_customizations_updated_at`
+5. Automated Triggers:
+   - `trg_personalization_templates_updated_at` $\rightarrow$ `m13_set_updated_at()`
+   - `trg_customization_sessions_updated_at` $\rightarrow$ `m13_set_updated_at()`
+   - `trg_order_customizations_updated_at` $\rightarrow$ `m13_set_updated_at()`
 
 ---
 
@@ -106,7 +124,7 @@ If Decision 4 is authorized and subsequent staging tests detect regression or fa
    - Drops all 3 M13 automated `updated_at` triggers explicitly.
    - **Explicit Known Foreign Key Severing:** Drops foreign key constraints (`fk_order_customizations_order`, `order_customizations_session_id_fkey`, `customization_sessions_template_id_fkey`, `fk_personalization_templates_product`) explicitly before dropping tables.
    - **Restrictive Table Drops (`DROP TABLE ... RESTRICT`):** All `CASCADE` table drops are completely removed. If any unexpected external view, table, foreign key, or extension depends on M13 tables, PostgreSQL immediately aborts the transaction with an error, preventing unintended schema corruption or data loss.
-   - **Catalog-Level Procedure Inspection (`pg_catalog`):** Queries `pg_proc` and `pg_trigger` by OID (`t.tgfoid = p.oid AND NOT t.tgisinternal`). If any active trigger elsewhere in the database references `public.set_current_timestamp_updated_at()`, the function is safely preserved with a diagnostic notice.
+   - **M13-Owned Function Cleanup:** Drops exclusively `public.m13_set_updated_at() RESTRICT`. Shared platform functions remain completely untouched.
 3. Verify clean staging state:
    ```sql
    SELECT table_name FROM information_schema.tables 
@@ -120,4 +138,3 @@ If Decision 4 is authorized and subsequent staging tests detect regression or fa
 ## 7. Current Authorization Status
 
 **Decision 4 remains strictly NOT AUTHORIZED.** This preflight package provides the complete technical foundation for operator review.
-
