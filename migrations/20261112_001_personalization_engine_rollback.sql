@@ -122,18 +122,20 @@ BEGIN
 END $$;
 
 -- ==============================================================================
--- 3. Drop M13-Specific Row Level Security Policies (Verified Definition)
+-- 3. Drop M13-Specific Row Level Security Policies (Verified Exact Definition)
 -- ==============================================================================
--- Before dropping any policy, verify its command, exact role bindings, and qualifiers.
--- If an unrelated or altered same-named policy exists, abort safely.
+-- Before dropping any policy, verify its command, exact normalized role-set equality,
+-- and qualifiers. If an unrelated or altered same-named policy exists, abort safely.
 DO $$
 DECLARE
     v_cmd TEXT;
     v_roles NAME[];
     v_qual TEXT;
     v_with_check TEXT;
+    v_norm_roles TEXT[];
 BEGIN
     -- Policy: "Public read active templates"
+    -- Exact expected roles: {'anon', 'authenticated'}
     IF EXISTS (
         SELECT 1 FROM pg_policies
         WHERE schemaname = 'public' 
@@ -146,8 +148,11 @@ BEGIN
           AND tablename = 'personalization_templates' 
           AND policyname = 'Public read active templates';
 
+        SELECT array_agg(r ORDER BY r) INTO v_norm_roles
+        FROM (SELECT unnest(v_roles)::text AS r) sub;
+
         IF v_cmd != 'SELECT' 
-           OR NOT (v_roles @> ARRAY['anon'::name] AND v_roles @> ARRAY['authenticated'::name])
+           OR v_norm_roles IS DISTINCT FROM ARRAY['anon', 'authenticated']
            OR (v_qual != '(is_active = true)' AND v_qual != 'is_active') 
            OR v_with_check IS NOT NULL THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Public read active templates" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.', 
@@ -158,6 +163,7 @@ BEGIN
     END IF;
 
     -- Policy: "Service role full access on personalization_templates"
+    -- Exact expected roles: {'service_role'}
     IF EXISTS (
         SELECT 1 FROM pg_policies
         WHERE schemaname = 'public' 
@@ -170,8 +176,11 @@ BEGIN
           AND tablename = 'personalization_templates' 
           AND policyname = 'Service role full access on personalization_templates';
 
+        SELECT array_agg(r ORDER BY r) INTO v_norm_roles
+        FROM (SELECT unnest(v_roles)::text AS r) sub;
+
         IF v_cmd != 'ALL' 
-           OR NOT (v_roles @> ARRAY['service_role'::name]) 
+           OR v_norm_roles IS DISTINCT FROM ARRAY['service_role'] 
            OR v_qual != 'true' 
            OR v_with_check != 'true' THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on personalization_templates" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.',
@@ -182,6 +191,7 @@ BEGIN
     END IF;
 
     -- Policy: "Service role full access on customization_sessions"
+    -- Exact expected roles: {'service_role'}
     IF EXISTS (
         SELECT 1 FROM pg_policies
         WHERE schemaname = 'public' 
@@ -194,8 +204,11 @@ BEGIN
           AND tablename = 'customization_sessions' 
           AND policyname = 'Service role full access on customization_sessions';
 
+        SELECT array_agg(r ORDER BY r) INTO v_norm_roles
+        FROM (SELECT unnest(v_roles)::text AS r) sub;
+
         IF v_cmd != 'ALL' 
-           OR NOT (v_roles @> ARRAY['service_role'::name]) 
+           OR v_norm_roles IS DISTINCT FROM ARRAY['service_role'] 
            OR v_qual != 'true' 
            OR v_with_check != 'true' THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on customization_sessions" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.',
@@ -206,6 +219,7 @@ BEGIN
     END IF;
 
     -- Policy: "Service role full access on order_customizations"
+    -- Exact expected roles: {'service_role'}
     IF EXISTS (
         SELECT 1 FROM pg_policies
         WHERE schemaname = 'public' 
@@ -218,8 +232,11 @@ BEGIN
           AND tablename = 'order_customizations' 
           AND policyname = 'Service role full access on order_customizations';
 
+        SELECT array_agg(r ORDER BY r) INTO v_norm_roles
+        FROM (SELECT unnest(v_roles)::text AS r) sub;
+
         IF v_cmd != 'ALL' 
-           OR NOT (v_roles @> ARRAY['service_role'::name]) 
+           OR v_norm_roles IS DISTINCT FROM ARRAY['service_role'] 
            OR v_qual != 'true' 
            OR v_with_check != 'true' THEN
             RAISE EXCEPTION 'M13 Rollback Aborted: Policy "Service role full access on order_customizations" definition mismatch (cmd %, roles %, qual %, with_check %). Aborting.',

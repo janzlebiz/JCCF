@@ -962,43 +962,67 @@ class PostgresIntegrationRunner:
         self.results.append(self.run_scenario("PG-INT-22", "Trigger exists while function absent aborts rollback (F2 verification)", setup_22, test_22))
 
         # ----------------------------------------------------------------------
-        # Scenario 23: Direct Role Permissions In Dedicated Sessions (F3 Verification)
+        # Scenario 23: Complete Permission Matrix (F7 Verification)
         # ----------------------------------------------------------------------
         def setup_23(cur):
             cur.execute(self.migration_sql)
 
         def test_23(conn):
-            # Test direct role permissions outside PL/pgSQL using SET ROLE in clean transaction blocks
+            # Test complete permission matrix across all 3 roles and all 3 tables in dedicated transaction blocks
             conn.autocommit = False
             cur = conn.cursor()
 
             # 1. anon can SELECT active templates
             cur.execute("SET ROLE anon;")
             cur.execute("SELECT count(*) FROM public.personalization_templates WHERE is_active = true;")
-            anon_templates = cur.fetchone()[0]
+            anon_t = cur.fetchone()[0]
+            cur.execute("RESET ROLE;")
+            conn.commit()
 
             # 2. anon CANNOT SELECT customization_sessions
-            anon_denied_sessions = False
+            anon_s_denied = False
+            cur.execute("SET ROLE anon;")
             try:
                 cur.execute("SELECT * FROM public.customization_sessions;")
-            except Exception as e:
-                anon_denied_sessions = True
-                conn.rollback()
+            except Exception:
+                anon_s_denied = True
+            conn.rollback()
 
-            # 3. authenticated can SELECT active templates
-            cur.execute("SET ROLE authenticated;")
-            cur.execute("SELECT count(*) FROM public.personalization_templates WHERE is_active = true;")
-            auth_templates = cur.fetchone()[0]
-
-            # 4. authenticated CANNOT SELECT order_customizations
-            auth_denied_orders = False
+            # 3. anon CANNOT SELECT order_customizations
+            anon_o_denied = False
+            cur.execute("SET ROLE anon;")
             try:
                 cur.execute("SELECT * FROM public.order_customizations;")
-            except Exception as e:
-                auth_denied_orders = True
-                conn.rollback()
+            except Exception:
+                anon_o_denied = True
+            conn.rollback()
 
-            # 5. service_role has full access across all 3 tables
+            # 4. authenticated can SELECT active templates
+            cur.execute("SET ROLE authenticated;")
+            cur.execute("SELECT count(*) FROM public.personalization_templates WHERE is_active = true;")
+            auth_t = cur.fetchone()[0]
+            cur.execute("RESET ROLE;")
+            conn.commit()
+
+            # 5. authenticated CANNOT SELECT customization_sessions
+            auth_s_denied = False
+            cur.execute("SET ROLE authenticated;")
+            try:
+                cur.execute("SELECT * FROM public.customization_sessions;")
+            except Exception:
+                auth_s_denied = True
+            conn.rollback()
+
+            # 6. authenticated CANNOT SELECT order_customizations
+            auth_o_denied = False
+            cur.execute("SET ROLE authenticated;")
+            try:
+                cur.execute("SELECT * FROM public.order_customizations;")
+            except Exception:
+                auth_o_denied = True
+            conn.rollback()
+
+            # 7. service_role has full access across all three tables
             cur.execute("SET ROLE service_role;")
             cur.execute("SELECT count(*) FROM public.personalization_templates;")
             sr_t = cur.fetchone()[0]
@@ -1006,15 +1030,20 @@ class PostgresIntegrationRunner:
             sr_s = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM public.order_customizations;")
             sr_o = cur.fetchone()[0]
-
             cur.execute("RESET ROLE;")
             conn.commit()
 
-            if anon_templates >= 0 and anon_denied_sessions and auth_templates >= 0 and auth_denied_orders and sr_t >= 0 and sr_s >= 0 and sr_o >= 0:
-                return "PASS", "Direct role access verified: anon/auth read active templates only; service_role full access", f"anon_t: {anon_templates}, sr_t: {sr_t}"
-            return "FAIL", f"Role permission verification failed. anon_denied={anon_denied_sessions}, auth_denied={auth_denied_orders}", ""
+            matrix_passed = (
+                anon_t >= 0 and anon_s_denied and anon_o_denied and
+                auth_t >= 0 and auth_s_denied and auth_o_denied and
+                sr_t >= 0 and sr_s >= 0 and sr_o >= 0
+            )
 
-        self.results.append(self.run_scenario("PG-INT-23", "Direct role permissions in dedicated sessions (F3 verification)", setup_23, test_23))
+            if matrix_passed:
+                return "PASS", "Full 7-point permission matrix verified: anon/auth read templates only; denied sessions & orders; service_role full access", f"anon_t: {anon_t}, sr_t: {sr_t}"
+            return "FAIL", f"Permission matrix failed: anon_s_denied={anon_s_denied}, anon_o_denied={anon_o_denied}, auth_s_denied={auth_s_denied}, auth_o_denied={auth_o_denied}", ""
+
+        self.results.append(self.run_scenario("PG-INT-23", "Complete 7-point permission matrix in dedicated sessions (F7 verification)", setup_23, test_23))
 
         # ----------------------------------------------------------------------
         # Scenario 24: Missing Required Column in order_customizations Rejection (F4 Verification)
@@ -1054,6 +1083,68 @@ class PostgresIntegrationRunner:
                 return "FAIL", f"Unexpected error message: {e}", str(e)
 
         self.results.append(self.run_scenario("PG-INT-24", "Missing column in order_customizations rejection (F4 verification)", setup_24, test_24))
+
+        # ----------------------------------------------------------------------
+        # Scenario 25: Policy Additional Role Rejected During Rollback (F6-A)
+        # ----------------------------------------------------------------------
+        def setup_25(cur):
+            cur.execute(self.migration_sql)
+            # Recreate policy with extra unauthorized role (e.g. anon, authenticated, postgres)
+            cur.execute("""
+                DROP POLICY "Public read active templates" ON public.personalization_templates;
+                CREATE POLICY "Public read active templates"
+                ON public.personalization_templates FOR SELECT
+                TO anon, authenticated, service_role
+                USING (is_active = true);
+            """)
+
+        def test_25(conn):
+            conn.autocommit = False
+            cur = conn.cursor()
+            try:
+                cur.execute(self.rollback_sql)
+                conn.commit()
+                return "FAIL", "Rollback proceeded despite unauthorized additional role in policy", "Expected rollback abort"
+            except Exception as e:
+                conn.rollback()
+                cur.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'personalization_templates';")
+                count = cur.fetchone()[0]
+                if "definition mismatch" in str(e) and count == 1:
+                    return "PASS", "Rollback aborted safely on additional policy role; table preserved", str(e)
+                return "FAIL", f"Unexpected error or table dropped: {e}, count={count}", str(e)
+
+        self.results.append(self.run_scenario("PG-INT-25", "Policy with additional role rejected during rollback (F6-A verification)", setup_25, test_25))
+
+        # ----------------------------------------------------------------------
+        # Scenario 26: Policy with Unexpected PUBLIC Role Rejected During Rollback (F6-C)
+        # ----------------------------------------------------------------------
+        def setup_26(cur):
+            cur.execute(self.migration_sql)
+            # Recreate policy assigned to PUBLIC
+            cur.execute("""
+                DROP POLICY "Public read active templates" ON public.personalization_templates;
+                CREATE POLICY "Public read active templates"
+                ON public.personalization_templates FOR SELECT
+                TO public
+                USING (is_active = true);
+            """)
+
+        def test_26(conn):
+            conn.autocommit = False
+            cur = conn.cursor()
+            try:
+                cur.execute(self.rollback_sql)
+                conn.commit()
+                return "FAIL", "Rollback proceeded despite unexpected PUBLIC role in policy", "Expected rollback abort"
+            except Exception as e:
+                conn.rollback()
+                cur.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'personalization_templates';")
+                count = cur.fetchone()[0]
+                if "definition mismatch" in str(e) and count == 1:
+                    return "PASS", "Rollback aborted safely on unexpected PUBLIC role; table preserved", str(e)
+                return "FAIL", f"Unexpected error or table dropped: {e}, count={count}", str(e)
+
+        self.results.append(self.run_scenario("PG-INT-26", "Policy with unexpected PUBLIC role rejected during rollback (F6-C verification)", setup_26, test_26))
 
         # ----------------------------------------------------------------------
         # Scenario 15: Sentinel Isolation Verification (R5 Regression Protection)
