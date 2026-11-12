@@ -9,7 +9,12 @@
 
 ## 1. Operating Instructions & Gate Enforcement
 
-This checklist is an authoritative operational gate designed to be executed by the authorized database administrator or migration operator **AFTER** the project owner formally approves Decision 4, but **BEFORE** the migration DDL (`migrations/20261112_001_personalization_engine.sql`) is executed against the Supabase staging database.
+This checklist is an authoritative operational gate designed to enforce the **Two-Stage Decision Model (Finding TC-06)**:
+* **Stage A (Owner Decision):** Project Owner grants *Conditional Authorization* for a controlled staging migration window.
+* **Stage B (Pre-Execution Release):** The authorized database administrator or migration operator independently verifies all mandatory preflight conditions immediately prior to running DDL.
+
+> [!IMPORTANT]
+> **Conditional authorization of D4 is permission to proceed toward a controlled staging migration, subject to the defined pre-execution release conditions. It is not automatic permission to execute SQL. The operator must separately confirm that all mandatory execution conditions are satisfied before any DDL is run.**
 
 **Strict Stop Condition:** If any check in Sections E1 through E5 receives a "NO" or fails to produce verifiable evidence, migration execution must be **immediately aborted**.
 

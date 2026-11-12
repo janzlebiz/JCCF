@@ -34,6 +34,7 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 | **Pre-Execution Gap Register** | `M13_PRE_EXECUTION_GAP_REGISTER.md` | Current HEAD | Consolidated gap & risk register (D1 severity) |
 | **Acceptance Checklist** | `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | Current HEAD | Future staging operational gate (E1–E6) |
 | **Final Decision Package** | `M13_DECISION_4_FINAL_PACKAGE.md` | Current HEAD | Definitive Owner Decision 4 authorization package |
+| **Decision Clarification** | `M13_D4_OWNER_DECISION_CLARIFICATION.md` | Current HEAD | Targeted evidence reconciliation for Decision 4 |
 | **Integration Suite**| `tests/test_migration_postgres_integration.py` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | 26 automated PostgreSQL integration tests |
 | **Scenario Suite** | `tests/test_migration_scenarios.py` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | 12 AST/Catalog logic scenario tests |
 | **CI Workflow** | `.github/workflows/postgres_verification.yml` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | Automated GitHub Actions CI pipeline |
@@ -67,13 +68,13 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 | `M13_STAGE_4_MIGRATION_SCOPE_INVENTORY.md` | `A1F5128897700F5EE26DE89B0D183F3C32189970C735503E1E151C1B67C6EEF8` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_STAGE_4_SUPABASE_COMPATIBILITY_MATRIX.md` | `66A3767710EA78A4E2DA8AD9516EF72C242782070E5609149DEDFC0F3AD2AE77` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_STAGE_4_EXECUTION_AND_ROLLBACK_RUNBOOK.md` | `71B01C0310962920FA829CFDD2FD4AB2D9D905E9ECF6D562A6CF0C28F7B58945` | `759bac0` | **Governing** | Unchanged (Stable) |
-| `M13_STAGE_4_EVIDENCE_REGISTER.md` | `C522B0C3C884E724002608393F1DBBF61FF3B961E644AE486B6E4CFA7E1C5B3B` | `759bac0` (updated) | Reference | Reconciled with EV-M13-13..18 |
+| `M13_STAGE_4_EVIDENCE_REGISTER.md` | `048A84C422CA6DA98D98B3328723B4278E9FC21EF6B9D06D53272B24F453658D` | Current HEAD | Reference | Reconciled (EV-M13-19 added) |
 | `M13_STAGE_4_OWNER_AUTHORIZATION_PACKAGE.md` | `C0AB3F9AE826C9F3D1802500B2C729495251AF430B6CD269DCB18AFBD0F91570` | `759bac0` | Reference | Unchanged (Stable) |
-| `M13_SUPABASE_COMPATIBILITY_REVIEW.md` | `24C33DA2A31B2A5EB95A7C6DAE216A0D0132C6C903E8B2BD01B9DF73D5BA3271` | Current HEAD | **Governing** | Newly Added (Workstream A) |
-| `M13_BACKUP_RECOVERY_READINESS.md` | `8E48CDAC76E6E8052B2064AE69C343FDD3A9C9F94C68A014901E8F31CCC73B2C` | Current HEAD | **Governing** | Newly Added (Workstream B) |
-| `M13_PRE_EXECUTION_GAP_REGISTER.md` | `DD1BB6D161F921951B47F78A864393F2D5A8B63C61875681414E12416826F7E5` | Current HEAD | **Governing** | Newly Added (Workstream D) |
-| `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | `D581A7E7855D9A9743D273CEBF578A36A53EAB244185BC4791417E944ADB6212` | Current HEAD | **Governing** | Newly Added (Workstream E) |
-| `M13_DECISION_4_FINAL_PACKAGE.md` | `DB243937C4BD0EE20EA86CC311D17DC59C8707D9F097D3090DBF78E7F079B945` | Current HEAD | **Governing** | Newly Added (Workstream F) |
+| `M13_SUPABASE_COMPATIBILITY_REVIEW.md` | `57872C870672A5E15700C5EB71F329B19162601C09BFC1A67AFB3F959007EABC` | Current HEAD | **Governing** | Reconciled (v1.1) |
+| `M13_BACKUP_RECOVERY_READINESS.md` | `41A6292CB1898111295A8E0599996DC4AFFBFFEA66ED075B2A73E0DD2EC4F6DC` | Current HEAD | **Governing** | Reconciled (v1.1) |
+| `M13_PRE_EXECUTION_GAP_REGISTER.md` | `2A7F24392BED0EA44BCE59F1C9DE91BCF445FFE6C4937CAEEAFCEE5964878521` | Current HEAD | **Governing** | Reconciled (v1.1) |
+| `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | `B8D6430557EBB6FCC8BC2063895EA86F1D27FCF93538353B55F48DE413530E3B` | Current HEAD | **Governing** | Reconciled (v1.1) |
+| `M13_D4_OWNER_DECISION_CLARIFICATION.md` | `3A4017F09EC24698821C1B8D408121634A3ECACAEDDAF286929D5697FD735717` | Current HEAD | **Governing** | Newly Added (TC-01..06) |
 | `tests/test_migration_postgres_integration.py` | `0A44F87AB76F571E568FB24BED65BB79C088F0FE743A65B3F2CF04905A77D018` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
 | `tests/test_migration_scenarios.py` | `56CA02D05D26BEF19573C05873081C621C7693C897E645B1FF788D334B72BA49` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
 | `.github/workflows/postgres_verification.yml` | `ED7C7BA77E43CC9DE1CADA44FA8B1B4E4B4E3BBC78D534EDD920CA7A1EFA637F` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
@@ -84,8 +85,9 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 
 * **Governing Migration Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`
 * **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`
-* **Latest Documentation Commit:** `759bac06ce35270c0f650e2a78ac34a0ba3ca83c`
-* **CI Verified Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`
+* **CI Verified Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (Run `43277854888`)
+* **Stage 4 Publication Commit:** `11803ae273e9f527972d4ba418d8f78221227bef`
+* **Current Working HEAD:** `2b6027be220531dfb9ea46fb122fa02ecdd99587`
 * **GitHub Actions Workflow Run:** `43277854888`
 * **Test Environment:** Automated Ubuntu 22.04 runner hosting PostgreSQL 15.1 official container service.
 * **Results:** **26/26 Integration Tests PASSED**, **0 FAILED**, **0 SKIPPED**.

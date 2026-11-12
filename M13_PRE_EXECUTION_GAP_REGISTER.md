@@ -34,7 +34,23 @@ Every identified finding, gap, or operational constraint is categorized using th
 
 ---
 
-## 3. Analysis of Open Items and Path to D4 Authorization
+## 3. Multi-Phase Requirement Separation (Finding TC-05)
+
+To prevent conflating database migration prerequisites with downstream application engineering or commercial launch requirements, every milestone is strictly partitioned across project phases:
+
+| Requirement | D4 Prerequisite (Owner Decision) | Staging Pre-Execution (Operator Gate) | Post-D4 / Phase 1 Milestone | Launch Prerequisite |
+|---|---|---|---|---|
+| **Supabase Staging Backup** | Architecture & procedure approved | **Mandatory capture before DDL** | Disaster recovery evidence | Continuous production PITR |
+| **Migration Artifact Hashes** | Cryptographic hash confirmed | **Rechecked against checked-out Git commit** | Code baseline frozen | Production tag verification |
+| **Supabase Preflight Queries**| Static queries reviewed | **Mandatory execution in staging before DDL** | Post-DDL schema verification | Production preflight |
+| **PostgREST Schema Reflection**| Design compatibility verified | Schema cache reload (`NOTIFY pgrst`) | Endpoint integration tests | Public API monitoring |
+| **Storage Bucket (`petstory-assets`)** | Architecture decoupled from SQL | Not required for SQL DDL | Configured in Stage 5 onboarding | Signed URL TTL validated |
+| **Lemon Squeezy KYC & Payout** | Decoupled from database DDL | Not required for SQL DDL | Webhook HMAC tests in sandbox | Philippine KYC & bank rail active |
+| **Phase 1 Application Engineering**| **NOT AUTHORIZED** (Independent gate) | **NOT AUTHORIZED** | Requires separate Decision 5 approval| Full application QA |
+
+---
+
+## 4. Analysis of Open Items and Path to D4 Authorization
 
 1. **Code Defects (Zero Remaining):**
    * All previously identified technical defects (GAP-01, GAP-02, GAP-03) have been completely remediated, validated in automated CI tests (26/26 passing), and reconciled across documentation.

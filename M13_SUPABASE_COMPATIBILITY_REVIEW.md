@@ -59,6 +59,17 @@ This assessment is conducted strictly through static code analysis, simulated AS
 * **Fail-Closed Behavior:** If run against a non-Supabase vanilla PostgreSQL database lacking these roles, the migration aborts immediately before any schema changes occur. Zero `TO public` fallback exists.
 * **Status:** `VERIFIED`.
 
+### 2.6 External Foreign-Key Dependencies (Finding TC-02)
+* **`public.products` Reference:** M13 creates `fk_personalization_templates_product` conditionally if and only if `public.products` exists in the database.
+  * M13 **never creates, alters, or adds columns to `public.products`**.
+  * `public.products` is **NOT required** prior to migration. If absent, the foreign key is safely skipped with a diagnostic `NOTICE`.
+  * Rollback strictly severs `fk_personalization_templates_product` on `personalization_templates`; it **never drops or modifies `public.products`**.
+* **`public.orders` Reference:** M13 creates `fk_order_customizations_order` conditionally if and only if `public.orders` exists.
+  * M13 **never creates, alters, or adds columns to `public.orders`**.
+  * `public.orders` is **NOT required** prior to migration. If absent, the relationship is omitted without failure.
+  * Rollback severs the constraint on `order_customizations`; it **never touches `public.orders`**.
+* **Status:** `VERIFIED` — Zero modifications to existing external tables.
+
 ---
 
 ## 3. A2: Roles, Grants, and Object Ownership
@@ -175,10 +186,10 @@ If any policy was modified post-migration to include unintended roles (e.g., `PU
 
 ### 6.1 Schema Exposure & Table Visibility
 * **Exposed Schema:** Supabase PostgREST exposes the `public` schema by default.
-* **Client Visibility:**
-  * `personalization_templates`: Exposed to HTTP `GET /rest/v1/personalization_templates?is_active=eq.true`.
-  * `customization_sessions`: Hidden by RLS and table `REVOKE`. Any HTTP request from `anon` or `authenticated` receives HTTP `401 Unauthorized` or HTTP `404 Not Found` (PostgREST RLS denial).
-  * `order_customizations`: Hidden by RLS and table `REVOKE`. Direct HTTP access denied.
+* **Client Visibility & API Authorization:**
+  * `personalization_templates`: Granted `SELECT` to `anon` and `authenticated` with RLS filter `is_active = true`. Expected to be readable via PostgREST `GET /rest/v1/personalization_templates?is_active=eq.true`.
+  * `customization_sessions`: Direct access revoked from `anon` and `authenticated` via table-level `REVOKE ALL` and restrictive RLS. Unauthorized access is expected to be denied by the configured database privileges and RLS policies. The precise HTTP status (e.g. 401, 403, or 404), resource-discovery behavior, and schema-cache behavior have not been verified against live Supabase PostgREST.
+  * `order_customizations`: Direct access revoked from `anon` and `authenticated` via table-level `REVOKE ALL` and restrictive RLS. Database access is strictly confined to `service_role`. Live HTTP endpoint behavior remains unverified until staging execution.
 * **Relationship Discovery:** Foreign keys `customization_sessions_template_id_fkey` and `order_customizations_session_id_fkey` allow PostgREST to automatically build nested resource routes for backend `service_role` calls.
 
 ### 6.2 Schema Cache Reload Post-Migration

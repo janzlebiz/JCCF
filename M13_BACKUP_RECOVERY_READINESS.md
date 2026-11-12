@@ -66,7 +66,7 @@ Before executing any DDL in the Supabase staging environment, the staging databa
 
 ---
 
-## 4. B3: Database Restoration Procedure
+## 4. B3: Database Restoration Procedure & Managed Supabase Constraints
 
 If migration execution encounters an unrecoverable failure or damages existing staging state, the operator must execute this sequence:
 
@@ -79,15 +79,12 @@ If migration execution encounters an unrecoverable failure or damages existing s
                     ▼
        2. EVALUATE FAILURE SEVERITY
        ├── Schema Isolated? ──► Execute SQL Rollback Script
-       └── Database Corrupted? ──► Execute Full Snapshot Restoration
+       └── Database Corrupted? ──► Execute Managed Restoration
                     │
                     ▼
-       3. RESTORATION FROM DUMP
-       ├── Step A: Terminate active client connections
-       ├── Step B: Drop modified/corrupted staging database
-       ├── Step C: Re-create empty target database with extensions
-       ├── Step D: Restore schema from logical backup
-       └── Step E: Restore data payloads using pg_restore
+       3. RESTORATION OPTIONS (MANAGED SUPABASE)
+       ├── Option 1: Managed PITR Point-in-Time Restore (Supabase Dashboard)
+       └── Option 2: Logical Dump In-Place Restore (pg_restore --clean)
                     │
                     ▼
        4. POST-RESTORATION VERIFICATION
@@ -96,24 +93,28 @@ If migration execution encounters an unrecoverable failure or damages existing s
        └── Confirm RLS policies re-enabled
 ```
 
-### Detailed Command Execution for Full Disaster Restoration:
-```bash
-# Terminate connections
-psql -h $DB_HOST -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'postgres' AND pid <> pg_backend_pid();"
-
-# Restore database from custom-format archive
-pg_restore -h $DB_HOST -U postgres -d postgres -v --clean --if-exists staging_pre_m13_data.dump
-```
+### Managed Service Restrictions on Supabase:
+* **No `DROP DATABASE postgres`:** Supabase managed cloud disallows dropping the core `postgres` system database. Traditional self-hosted `dropdb` procedures fail on Supabase.
+* **In-Place Schema Restoration:** In-place restoration must use `pg_restore -h $DB_HOST -U postgres -d postgres -v --clean --if-exists staging_pre_m13_data.dump` to drop and recreate only targeted tables without destroying database-level extensions or managed roles.
+* **Emergency Active Connection Termination:**
+  ```sql
+  -- EMERGENCY RESTORATION WINDOW ONLY (Requires DBA Authorization)
+  SELECT pg_terminate_backend(pid) FROM pg_stat_activity 
+  WHERE datname = 'postgres' AND pid <> pg_backend_pid();
+  ```
+  *Notice:* Connection termination is disruptive to all staging services and is strictly reserved for full emergency disaster restores during an approved maintenance window.
 
 ---
 
-## 5. B4: Recovery Point Objective (RPO) and Recovery Time Objective (RTO)
+## 5. B4: Recovery Point Objective (RPO) and Recovery Time Objective (RTO) — Proposed Parameters
 
-* **Staging Environment RPO:** **0 seconds** of data loss for pre-existing tables (`public.products`, etc.).
+*Notice: The following targets are proposed engineering parameters submitted for Owner review; they become binding operational commitments only upon formal Owner endorsement.*
+
+* **Proposed Staging Environment RPO:** **0 seconds** of data loss for pre-existing tables (`public.products`, etc.).
   * For M13 tables: Staging contains zero live customer transactions. Re-running migration produces 0 data loss.
-* **Staging Environment RTO:** **15 minutes**.
+* **Proposed Staging Environment RTO:** **15 minutes**.
   * Complete restoration of a staging Supabase instance via logical dump or PITR restore completes in under 15 minutes.
-* **Production Anticipated Targets (G4 Spec):**
+* **Proposed Production Anticipated Targets (G4 Spec):**
   * Production RPO: < 1 minute (enabled via Supabase Continuous Archiving / WAL archiving).
   * Production RTO: < 30 minutes for complete cluster failover.
 
@@ -154,9 +155,11 @@ It is critical to distinguish between executing `migrations/20261112_001_persona
 
 **Verdict:** `READY WITH CONDITIONS`
 
-### Mandatory Conditions Prior to Execution:
-1. Staging database owner must capture a confirmed logical backup (`pg_dump`) immediately prior to migration.
-2. PITR snapshot timestamp must be logged in the preflight execution checklist.
-3. The operator must confirm that no production customer data resides in the target staging database.
-4. Final execution must proceed only after D4 owner authorization.
+*Notice:* Documented recovery procedures are not equivalent to a tested recovery. The current absence of a live staging backup is an **explicit pre-execution blocker** preventing any DDL execution until satisfied.
+
+### Mandatory Pre-Execution Release Conditions:
+1. **Pre-Execution Backup Capture:** Staging database owner must capture a confirmed logical schema and data backup (`pg_dump`) immediately prior to migration.
+2. **PITR Timestamp Logging:** Point-in-time recovery timestamp must be logged in the preflight execution checklist.
+3. **Environment Isolation Confirmation:** The operator must confirm that no production customer data resides in the target staging database.
+4. **Owner Authorization Prerequisite:** Physical DDL execution remains strictly blocked until formal Decision 4 owner sign-off.
 
