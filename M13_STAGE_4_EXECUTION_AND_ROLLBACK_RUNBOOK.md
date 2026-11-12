@@ -1,14 +1,14 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Execution & Rollback Runbook (Staging) (Remediated v2.0)
+# Subsystem M13 Stage 4: Execution & Rollback Runbook (Staging) (Remediated v3.0)
 
 **Document ID:** `JCCF-M13-STAGE-4-RUNBOOK`  
-**Version:** 2.0 (Post-Review Reconciliation)  
-**Date:** 13 November 2026 (2026-11-13T01:55:00+08:00)  
+**Version:** 3.0 (Post-Review Reconciliation)  
+**Date:** 13 November 2026 (2026-11-13T02:06:00+08:00)  
 **Status:** PROPOSED OPERATOR RUNBOOK — DO NOT EXECUTE WITHOUT D4 APPROVAL  
-**Governing Migration Commit SHA:** `cfa4001b37ee8bdeb9030b025fb7e06bc9fab37e`  
-**Verified CI Workflow SHA:** `8d02d9b9748ab2c3a47618abc59be509bd6f2420`  
-**Target Migration:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `D24F82E587E31C238317D207ACB377DE5328C4A845FADF651598E25F266CECFE`)  
-**Target Rollback:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `10721C96BDDDDEBFF2C1D8FAB60FC4D22EFB663B2BDBF191DA9611F3992A7960`)  
+**Governing Migration Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
+**Verified CI Workflow SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
+**Target Migration:** `migrations/20261112_001_personalization_engine.sql` (SHA-256: `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`)  
+**Target Rollback:** `migrations/20261112_001_personalization_engine_rollback.sql` (SHA-256: `33911582CB3FCD893A4286D71AB28CAEECEE1B56696EA840DE59A184BD5B4BD4`)  
 
 ---
 
@@ -22,7 +22,7 @@
 
 Before initiating the migration, the operator must complete the following checklist:
 
-- [ ] **Owner Authorization Confirmed:** Owner has signed Decision 4, explicitly citing migration hash `D24F82E5...` and rollback hash `10721C96...`.
+- [ ] **Owner Authorization Confirmed:** Owner has signed Decision 4, explicitly citing migration hash `9D6579BC...` and rollback hash `33911582...`.
 - [ ] **Target Project Verified:** Target project reference `<staging-ref>` is verified as non-production in Supabase dashboard.
 - [ ] **Production Boundary Safe:** Target host is confirmed as `db.<staging-ref>.supabase.co`; confirmed distinct from production project.
 - [ ] **Operator Privileges:** Operator has admin/postgres connection credentials for staging.
@@ -33,7 +33,7 @@ Before initiating the migration, the operator must complete the following checkl
 
 ## 2. Step-by-Step Staging Execution Runbook
 
-### Step 1: Pre-Migration Schema Snapshot & Backup (R6 Reconciled)
+### Step 1: Pre-Migration Schema Snapshot & Backup
 Capture logical full dump (schema and data) of the staging database:
 ```bash
 # PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
@@ -80,7 +80,7 @@ psql -h db.<staging-ref>.supabase.co -U postgres -d postgres \
 
 ---
 
-### Step 4: Post-Migration Validation Queries (R5 Reconciled)
+### Step 4: Post-Migration Validation Queries (F3 Reconciled)
 Execute verification queries to confirm catalog state across separate testing blocks:
 
 #### 4.1 Schema & RLS Catalog Verification (Admin Session)
@@ -105,50 +105,35 @@ JOIN pg_proc p ON t.tgfoid = p.oid
 WHERE p.proname = 'm13_set_updated_at';
 ```
 
-#### 4.2 Role Permission Tests (Isolated Anonymous Session)
-Run in a dedicated `psql` session to prevent transaction abort from blocking subsequent checks:
+#### 4.2 Role Permission Tests (Dedicated External Sessions)
+Execute in dedicated client sessions (or transactions) outside PL/pgSQL blocks to test authentic permission barriers:
 ```sql
 -- PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
--- Positive Test: anon can read active templates
+-- Anonymous Session:
 SET ROLE anon;
-SELECT count(*) FROM public.personalization_templates WHERE is_active = true;
+SELECT count(*) FROM public.personalization_templates WHERE is_active = true; -- Expected: PASS
+-- Attempting read on sessions (Expected: ERROR: permission denied for table customization_sessions)
+SELECT * FROM public.customization_sessions;
 RESET ROLE;
 
--- Negative Test Block (Wrapped in PL/pgSQL to catch expected denial safely):
-DO $$
-BEGIN
-    SET ROLE anon;
-    PERFORM * FROM public.customization_sessions;
-    RAISE EXCEPTION 'Security Breach: anon was able to query customization_sessions!';
-EXCEPTION WHEN insufficient_privilege THEN
-    RESET ROLE;
-    RAISE NOTICE 'Access safely denied to customization_sessions for anon role.';
-END $$;
+-- Authenticated Session:
+SET ROLE authenticated;
+SELECT count(*) FROM public.personalization_templates WHERE is_active = true; -- Expected: PASS
+-- Attempting read on orders (Expected: ERROR: permission denied for table order_customizations)
+SELECT * FROM public.order_customizations;
+RESET ROLE;
 
-DO $$
-BEGIN
-    SET ROLE anon;
-    PERFORM * FROM public.order_customizations;
-    RAISE EXCEPTION 'Security Breach: anon was able to query order_customizations!';
-EXCEPTION WHEN insufficient_privilege THEN
-    RESET ROLE;
-    RAISE NOTICE 'Access safely denied to order_customizations for anon role.';
-END $$;
-```
-
-#### 4.3 Service Role Verification (Isolated Backend Session)
-```sql
--- PROPOSED - DO NOT EXECUTE WITHOUT D4 APPROVAL
+-- Service Role Session:
 SET ROLE service_role;
-SELECT count(*) FROM public.personalization_templates;
-SELECT count(*) FROM public.customization_sessions;
-SELECT count(*) FROM public.order_customizations;
+SELECT count(*) FROM public.personalization_templates; -- Expected: PASS
+SELECT count(*) FROM public.customization_sessions;     -- Expected: PASS
+SELECT count(*) FROM public.order_customizations;       -- Expected: PASS
 RESET ROLE;
 ```
 
 ---
 
-## 3. Rollback Procedure & Stop Conditions (R4 Reconciled)
+## 3. Rollback Procedure & Stop Conditions (F1 & F2 Reconciled)
 
 ### Stop Conditions:
 Trigger immediate rollback if:

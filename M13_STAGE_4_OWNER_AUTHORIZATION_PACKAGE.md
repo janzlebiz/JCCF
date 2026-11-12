@@ -1,15 +1,15 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13 Stage 4: Owner Authorization Package (Remediated v2.0)
+# Subsystem M13 Stage 4: Owner Authorization Package (Remediated v3.0)
 ## Decision 4: Authorization for Supabase Staging Database Migration
 
 **Document ID:** `JCCF-M13-STAGE-4-AUTH-PKG`  
-**Version:** 2.0 (Post-Review Remediation Baseline)  
-**Date:** 13 November 2026 (2026-11-13T01:55:00+08:00)  
+**Version:** 3.0 (Post-Review Final Findings Closure Baseline)  
+**Date:** 13 November 2026 (2026-11-13T02:06:00+08:00)  
 **Status:** OWNER DECISION REQUIRED — EXECUTION STRICTLY PROHIBITED  
 **Repository:** `https://github.com/janzlebiz/JCCF`  
-**Target Migration Commit SHA:** `cfa4001b37ee8bdeb9030b025fb7e06bc9fab37e`  
-**Verified CI Workflow Run SHA:** `8d02d9b9748ab2c3a47618abc59be509bd6f2420`  
-**Verified GitHub Actions Workflow Run:** [Run 43273877704](https://github.com/janzlebiz/JCCF/actions/runs/43273877704) (`success`)  
+**Target Migration & Rollback Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
+**Verified CI Workflow Run SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
+**Verified GitHub Actions Workflow Run:** [Run 43276015572](https://github.com/janzlebiz/JCCF/actions/runs/43276015572) (`success`)  
 **Governing Register:** D1 & D2 Approved; D3 Conditional; D4 & D5 NOT AUTHORIZED  
 
 ---
@@ -21,7 +21,7 @@
 2. **Why the Staging Migration is Proposed:**  
    Subsystem M13 (Interactive Personalization Engine) requires persistent schema storage for customer intake sessions, declarative product schemas, and fulfillment artifacts. Applying the migration to an isolated Supabase staging environment allows validating Supabase-specific PostgREST schema reflection, RLS policy enforcement with real Supabase authentication tokens, and storage integration before initiating Phase 1 backend engineering.
 3. **What Has Been Verified:**  
-   - **PostgreSQL 15+ Integration (Disposable DB Isolation):** 20 scenarios (PG-INT-01 to PG-INT-20) executed in live CI using disposable PostgreSQL databases (`CREATE DATABASE jccf_<id>_<uuid>`).
+   - **PostgreSQL 15+ Integration (Disposable DB Isolation):** **24 scenarios** (PG-INT-01 to PG-INT-24) executed in live CI using disposable PostgreSQL databases (`CREATE DATABASE jccf_<id>_<uuid>`).
    - **Static DDL & AST Structure:** 12 static scenarios verified via `tests/test_migration_scenarios.py`.
    - **Financial Model Consistency:** 16 independent programmatic assertions verified via `tests/audit_eoc_model.py` ($5,644.61 EOC, 86.91% margin).
    - **Hostile Input Sanitization:** 9 XSS/SSTI attack payload checks verified via `tests/test_hostile_input_sanitization.py`.
@@ -41,16 +41,12 @@
 * **Completed Work:**
   - Conceptual architecture and data modeling for PetStory 24p digital MVP (CPL G0–G4).
   - Remediation of all 6 migration safety defects (M13-R1 to M13-R6).
-  - Remediation of Independent Review Findings R1 through R8:
-    - R1: Precise SHA distinction (migration, CI, doc commits) and cryptographic SHA-256 baseline.
-    - R2: Fail-closed role preflight check (aborts immediately if `anon`, `authenticated`, or `service_role` missing; zero `TO public` fallback).
-    - R3: Exact object inventory matching DDL column counts and index classifications.
-    - R4: Hardened rollback trigger/policy ownership verification (aborts on foreign same-named objects).
-    - R5: Isolated error-handling blocks in operator runbook and PostgREST verification queries.
-    - R6: Distinct backup classifications (logical dump vs physical snapshot vs PITR).
-    - R7: Full conditional foreign-key behavior evaluation (standalone vs coupled deployment).
-    - R8: Rigorous evidence claims explicitly distinguishing vanilla CI from Supabase runtime.
-  - PostgreSQL 15+ disposable database integration test harness (20 scenarios passed in CI).
+  - Remediation of Review Findings R1–R8 and Final Review Findings F1–F5:
+    - **F1 (Rollback Policy Role Verification):** All 4 rollback policy removal blocks inspect exact command, exact role arrays (`anon`, `authenticated`, `service_role`), and qualifiers before dropping; aborts safely on clash.
+    - **F2 (Trigger Ownership Check Fail-Closed):** All 3 rollback trigger checks verify that `public.m13_set_updated_at()` exists AND trigger procedure OID matches; aborts if function missing or OID differs.
+    - **F3 (Direct Role Permission Tests):** Established dedicated PostgreSQL session/transaction testing for `anon`, `authenticated`, and `service_role` without relying on inner PL/pgSQL blocks (tested in PG-INT-23).
+    - **F4 (Order Customizations 15-Column Reconciliation):** Complete reconciliation across DDL, preflight checks, inventory, and test assertions validating all 15 columns (including `revocation_reason VARCHAR(100) NULL`; tested in PG-INT-24).
+    - **F5 (Evidence & CI):** 24/24 integration scenarios passed on GitHub Actions CI Run 43276015572.
 * **Pending Work (Awaiting Decision 4):**
   - Owner review and explicit designation of target Supabase staging project reference.
   - Capture and verification of staging database backup.
@@ -79,13 +75,13 @@ The proposed migration (`migrations/20261112_001_personalization_engine.sql`) ex
 ### Summary of Database Objects Created
 1. **Preflight Guard Blocks (Section 0 & 0.1):**
    - Fail-closed role existence check: Aborts with `RAISE EXCEPTION` before any DDL mutation if `anon`, `authenticated`, or `service_role` do not exist in `pg_roles`.
-   - Comprehensive schema verification: Inspects existing columns, exact types, nullability, defaults, PKs, and FKs if M13 tables already exist.
+   - Comprehensive schema verification: Inspects existing columns, exact types, lengths, nullability, defaults, PKs, and FKs if M13 tables already exist. Validates all 9 columns of templates, all 11 of sessions, and all 15 of order customizations.
 2. **Trigger Function (Section 0):**
    - `public.m13_set_updated_at()`: Created conditionally with exact 0-argument signature and definition verification.
 3. **Tables & Columns (Sections 1, 2, 3):**
    - `public.personalization_templates`: **9 columns** (`id`, `product_id`, `version`, `schema_definition`, `layout_template_path`, `default_page_count`, `is_active`, `created_at`, `updated_at`). Primary Key on `id`.
    - `public.customization_sessions`: **11 columns** (`id`, `template_id`, `token_hash`, `current_step`, `answers`, `uploaded_assets`, `preview_artifact_path`, `status`, `expires_at`, `created_at`, `updated_at`). Primary Key on `id`.
-   - `public.order_customizations`: **14 columns** (`id`, `order_id`, `session_id`, `rendered_artifact_path`, `render_status`, `render_attempts`, `render_error_log`, `runtime_qel_results`, `download_token_hash`, `download_count`, `download_expires_at`, `revoked_at`, `revocation_reason`, `created_at`, `updated_at`). Primary Key on `id`.
+   - `public.order_customizations`: **15 columns** (`id`, `order_id`, `session_id`, `rendered_artifact_path`, `render_status`, `render_attempts`, `render_error_log`, `runtime_qel_results`, `download_token_hash`, `download_count`, `download_expires_at`, `revoked_at`, `revocation_reason`, `created_at`, `updated_at`). Primary Key on `id`.
 4. **Constraints:**
    - Unique: `uq_personalization_template_version` on `(product_id, version)`.
    - Unique: `customization_sessions.token_hash` (`UNIQUE`).
@@ -126,41 +122,44 @@ The proposed migration (`migrations/20261112_001_personalization_engine.sql`) ex
 
 ---
 
-## A4. Migration Identity & Cryptographic Hashes (R1 Baseline)
+## A4. Migration Identity & Cryptographic Hashes
 
-To guarantee absolute reproducibility, the artifact identities are strictly recorded:
+Artifact identities and exact file checksums:
 
 * **Repository:** `https://github.com/janzlebiz/JCCF`
-* **Commit Containing Migration & Rollback SQL:** `cfa4001b37ee8bdeb9030b025fb7e06bc9fab37e`
-* **Commit Tested by GitHub Actions CI:** `8d02d9b9748ab2c3a47618abc59be509bd6f2420`
-* **Byte Identity Verification:** The SQL bytes in `migrations/20261112_001_personalization_engine.sql` and `migrations/20261112_001_personalization_engine_rollback.sql` are identical between commit `cfa4001` and commit `8d02d9b`. (Commit `8d02d9b` only touched `tests/test_migration_postgres_integration.py` to refine Python test harness transaction catching).
+* **Target Migration & Rollback Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`
+* **GitHub Actions CI Tested Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`
 * **Target Migration File:** `migrations/20261112_001_personalization_engine.sql`
   - **Migration File SHA-256 Checksum:**  
-    `D24F82E587E31C238317D207ACB377DE5328C4A845FADF651598E25F266CECFE`
+    `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`
 * **Target Rollback File:** `migrations/20261112_001_personalization_engine_rollback.sql`
   - **Rollback File SHA-256 Checksum:**  
-    `10721C96BDDDDEBFF2C1D8FAB60FC4D22EFB663B2BDBF191DA9611F3992A7960`
+    `33911582CB3FCD893A4286D71AB28CAEECEE1B56696EA840DE59A184BD5B4BD4`
 * **Preflight Specification File:** `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md`
   - **Preflight File SHA-256 Checksum:**  
     `CE0A8C1072A49DD328D555CB31E93C9E9DD88538BA08D6696E6F828CF00C6225`
 * **Verified CI Workflow:** `.github/workflows/postgres_verification.yml`
-  - **Successful CI Run ID:** `43273877704`
-  - **CI Run URL:** https://github.com/janzlebiz/JCCF/actions/runs/43273877704
+  - **Successful CI Run ID:** `43276015572`
+  - **CI Run URL:** https://github.com/janzlebiz/JCCF/actions/runs/43276015572
   - **CI Workflow Conclusion:** `success`
-* **Evidence Timestamp:** 13 November 2026, 01:55:00 UTC+08:00 (Asia/Manila).
+* **Evidence Timestamp:** 13 November 2026, 02:06:00 UTC+08:00 (Asia/Manila).
 
 ---
 
-## A5. Verification Evidence Matrix (R8 Reconciled)
+## A5. Verification Evidence Matrix
 
 | Requirement Area | Source Artifact / Tool | Verification Type | Result | Scope & Remaining Limitations |
 |---|---|---|---|---|
 | **SQL Syntax & AST Structure** | `tests/test_migration_scenarios.py` | Static AST & Regex Scan | **PASS** (12/12) | Static code check; does not execute against live PostgreSQL engine. |
-| **Real PostgreSQL 15+ Integration** | `tests/test_migration_postgres_integration.py` | Live Container Execution (CI) | **PASS** (20/20) | Executed against `postgres:15-alpine` container service. Does NOT prove execution on Supabase staging. |
-| **Disposable DB Isolation** | `test_migration_postgres_integration.py` | Automated DB Isolation (`CREATE DATABASE`) | **PASS** (20/20) | Proves zero cross-test contamination across 20 distinct ephemeral databases. |
+| **Real PostgreSQL 15+ Integration** | `tests/test_migration_postgres_integration.py` | Live Container Execution (CI) | **PASS** (24/24) | Executed against `postgres:15-alpine` container service. Does NOT prove execution on Supabase staging. |
+| **Disposable DB Isolation** | `test_migration_postgres_integration.py` | Automated DB Isolation (`CREATE DATABASE`) | **PASS** (24/24) | Proves zero cross-test contamination across 24 distinct ephemeral databases. |
 | **Fail-Closed Role Preflight** | PG-INT-16 | Live DB Exception Check | **PASS** (1/1) | Verifies that missing required Supabase roles (`service_role`) safely raises `M13 Preflight Failed` and aborts transaction. |
 | **Rollback Ownership Guards** | PG-INT-17, PG-INT-18 | Live DB Exception Check | **PASS** (2/2) | Verifies that conflicting same-named triggers or policies abort rollback without dropping foreign objects. |
 | **Conditional FK Deployments** | PG-INT-19, PG-INT-20 | Live DB DDL Execution | **PASS** (2/2) | Proves clean standalone deployment (2 internal FKs) and coupled deployment (4 FKs). |
+| **Policy Role Verification (F1)** | PG-INT-21 | Live DB Exception Check | **PASS** (1/1) | Verifies rollback aborts when policy exists with altered role bindings; preserves tables. |
+| **Trigger Fail-Closed (F2)** | PG-INT-22 | Live DB Exception Check | **PASS** (1/1) | Verifies rollback aborts when trigger exists but M13 function is missing; preserves tables. |
+| **Direct Session Permissions (F3)** | PG-INT-23 | Dedicated Session Permission Execution | **PASS** (1/1) | Verifies direct role permissions outside PL/pgSQL: anon/auth read templates only; service_role has full access. |
+| **15-Column Preflight (F4)** | PG-INT-24 | Live DB Schema Rejection | **PASS** (1/1) | Proves table missing 15th column (`revocation_reason`) is rejected with explicit diagnostic. |
 | **Sentinel Maintenance DB Isolation** | PG-INT-15 Sentinel Test | Live Catalog Inspection | **PASS** (1/1) | Confirms zero M13 objects leaked into shared `postgres` maintenance DB. |
 | **Financial EOC Deductions** | `tests/audit_eoc_model.py` | Programmatic Assertions | **PASS** (16/16) | Mathematical model verification; does not predict real-world customer refund rates. |
 | **Jinja2 Hostile Input Sanitization** | `tests/test_hostile_input_sanitization.py` | Automated Template Execution | **PASS** (9/9) | Verifies HTML entity escaping; does not test browser DOM rendering. |
@@ -168,17 +167,17 @@ To guarantee absolute reproducibility, the artifact identities are strictly reco
 
 ---
 
-## A6. Supabase-Specific Compatibility Assessment (R2 & R8 Reconciled)
+## A6. Supabase-Specific Compatibility Assessment
 
 | Compatibility Area | Target Requirement | Supabase Assessment | Status | Supporting Evidence & Notes |
 |---|---|---|---|---|
 | **PostgreSQL Engine Version** | PostgreSQL 15+ | Supported natively by Supabase (standard is PG 15.x / 16.x). | **VERIFIED ON PG 15 CONTAINER** | Migration requires PG 13+ native `gen_random_uuid()`. |
 | **PostgREST Standard Roles** | `anon`, `authenticated`, `service_role` exist | Supabase pre-seeds these roles on all projects. | **VERIFIED VIA PREFLIGHT GUARD** | Section 0 preflight check aborts immediately if any required role is absent. |
-| **Role Fallback Behavior** | Zero `TO public` fallback for service role | Hardened migration eliminated all `TO public` fallback branches. Requires explicit roles. | **VERIFIED** | DDL explicitly revokes and grants privileges to named roles only. Tested via PG-INT-16. |
-| **Row Level Security (RLS)** | Public SELECT on active templates; service_role full access | Enforces zero customer data leakage. Anonymous guests cannot query sessions or orders directly. | **VERIFIED ON PG CONTAINER** | DDL revokes table privileges and defines strict RLS policies. |
+| **Role Fallback Behavior** | Zero `TO public` fallback for service role | Insecure fallback to `PUBLIC` must never occur. | Hardened migration eliminated all conditional `TO public` branches. Roles are strictly `anon, authenticated, service_role`. | **VERIFIED** | In a Supabase environment, roles are pre-seeded. In our CI harness, roles are pre-seeded cluster-wide. |
+| **Row Level Security (RLS)** | Table isolation and access policies | Public direct access denied to guest intake answers and fulfillment PDFs. | `personalization_templates` allows `SELECT` for active templates. `customization_sessions` and `order_customizations` grant access exclusively to `service_role`. | **VERIFIED ON PG 15 CONTAINER** | Tested in live CI (PG-INT-23). Enforces zero customer data leakage. Status on live Supabase remains **NOT VERIFIED ON SUPABASE**. |
 | **Function Ownership & search_path** | `public.m13_set_updated_at()` | Executed by `postgres` admin role in Supabase. Explicit schema qualification (`public.*`) used throughout. | **VERIFIED** | Function strictly performs `NEW.updated_at = now(); RETURN NEW;`. Zero search_path vulnerability. |
-| **Extensions Required** | Native `gen_random_uuid()` | Native core feature in PostgreSQL 13+. No `pgcrypto` or `uuid-ossp` extensions required. | **VERIFIED** | Tested cleanly on clean PG 15 container without extensions. |
-| **Rollback Ownership Safeguards** | Verified trigger OID and policy definitions | Rollback inspects procedure OID and policy qualifiers before dropping; aborts on clash. | **VERIFIED ON PG CONTAINER** | Tested via PG-INT-17 and PG-INT-18. |
+| **Extensions Required** | Native `gen_random_uuid()` | Native core feature in PostgreSQL 13+. No `pgcrypto` or `uuid-ossp` extensions required. | **VERIFIED** | Clean PG 15 Alpine container executes migration without creating extensions. |
+| **Rollback Ownership Safeguards** | Verified trigger OID, function presence, and policy definitions | Rollback inspects procedure OID, function existence, and policy role arrays before dropping; aborts on clash. | **VERIFIED ON PG 15 CONTAINER** | Tested via PG-INT-17, PG-INT-18, PG-INT-21, PG-INT-22. |
 | **Supabase Staging Integration** | Live PostgREST schema cache and JWT validation | Requires live execution on Supabase staging project. | **NOT VERIFIED ON SUPABASE** | Blocked pending Decision 4 approval. |
 
 ---
@@ -195,7 +194,7 @@ To guarantee absolute reproducibility, the artifact identities are strictly reco
 
 ---
 
-## A8. Backup and Recovery Plan (R6 Reconciled)
+## A8. Backup and Recovery Plan
 
 Before applying the migration to staging, an independently verified backup approach must be completed:
 
@@ -220,7 +219,7 @@ Before applying the migration to staging, an independently verified backup appro
 > [!WARNING]
 > **PROPOSED PROCEDURE ONLY — DO NOT EXECUTE WITHOUT FORMAL D4 APPROVAL.**
 
-1. **Pre-Execution Gate:** Confirm platform owner has signed Decision 4, citing commit `cfa4001` (or `8d02d9b`), migration hash `D24F82E5...`, and rollback hash `10721C96...`.
+1. **Pre-Execution Gate:** Confirm platform owner has signed Decision 4, citing commit `e624e95`, migration hash `9D6579BC...`, and rollback hash `33911582...`.
 2. **Target Isolation Check:** Confirm active connection string points to staging project `<staging-ref>`, never production.
 3. **Pre-Migration Backup:** Capture logical backup and verify recovery readiness.
 4. **Preflight Execution:** Execute Preflight Checks 1 through 6 from `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md`.
@@ -234,18 +233,18 @@ Before applying the migration to staging, an independently verified backup appro
 
 ---
 
-## A10. Rollback and Stop Conditions (R4 Reconciled)
+## A10. Rollback and Stop Conditions
 
 * **Exact Rollback Artifact:** `migrations/20261112_001_personalization_engine_rollback.sql`
-* **Rollback SHA-256 Checksum:** `10721C96BDDDDEBFF2C1D8FAB60FC4D22EFB663B2BDBF191DA9611F3992A7960`
+* **Rollback SHA-256 Checksum:** `33911582CB3FCD893A4286D71AB28CAEECEE1B56696EA840DE59A184BD5B4BD4`
 * **Immediate Stop & Rollback Conditions:**
   1. Role preflight guard fails (`Required Supabase role(s) do not exist`).
   2. Any schema preflight check raises an exception.
   3. DDL execution returns an unhandled database error.
   4. Post-migration permission validation reveals unauthorized public access to guest intake sessions or order records.
 * **Rollback Ownership & Restrictive Safety:**
-  - Before dropping triggers, verifies they reference `m13_set_updated_at()`. Aborts on clash.
-  - Before dropping RLS policies, verifies command and qualifiers match M13 contract. Aborts on clash.
+  - Before dropping triggers, verifies `m13_set_updated_at()` exists AND procedure OID matches. Aborts on clash or missing function (F2).
+  - Before dropping RLS policies, verifies command, exact role arrays, and qualifiers match M13 contract. Aborts on clash or altered roles (F1).
   - All 3 tables dropped using `RESTRICT` (zero `CASCADE`). If an external table or view references M13 tables, PostgreSQL halts the drop.
   - Dedicated trigger function `public.m13_set_updated_at()` dropped with `RESTRICT` only after confirming zero external triggers depend on it.
 * **Reversibility Limits:**
@@ -262,8 +261,8 @@ Before applying the migration to staging, an independently verified backup appro
 | **Role Preflight** | Executing in environment without PostgREST roles | High | Fail-closed Section 0 preflight check aborts before schema mutation if `anon`, `authenticated`, or `service_role` missing. | Negligible |
 | **Function Collision** | Overwriting shared platform trigger function | High | Subsystem-namespaced function `m13_set_updated_at()` created with exact 0-arg signature inspection; shared platform functions preserved. | Negligible |
 | **Security / Data Leak** | Anonymous exposure of guest intake answers or customer orders | High | Strict RLS enabled; table privileges explicitly revoked from `anon` and `authenticated`; service-role only access on sensitive tables. Zero `TO public` fallback. | Low |
-| **Unintended Cascades** | Dropping shared or dependent objects during rollback | High | Rollback uses strictly `DROP TABLE ... RESTRICT` (0 `CASCADE`); fails safely if unexpected dependencies exist. Verifies trigger OIDs and policy definitions before dropping. | Negligible |
-| **Schema Incompatibility** | Incompatible pre-existing table or foreign key definition | Medium | Section 0.1 performs exhaustive preflight checks on 100% of required columns, types, nullability, defaults, PKs, and FKs. | Negligible |
+| **Unintended Cascades** | Dropping shared or dependent objects during rollback | High | Rollback uses strictly `DROP TABLE ... RESTRICT` (0 `CASCADE`); fails safely if unexpected dependencies exist. Verifies trigger OIDs, function presence, and policy role bindings before dropping. | Negligible |
+| **Schema Incompatibility** | Incompatible pre-existing table or foreign key definition | Medium | Section 0.1 performs exhaustive preflight checks on 100% of required columns (9 in templates, 11 in sessions, 15 in order customizations), types, nullability, defaults, PKs, and FKs. | Negligible |
 
 ---
 
@@ -276,12 +275,12 @@ SUBSYSTEM M13 — SUPABASE STAGING DATABASE MIGRATION
 ================================================================================
 
 Target Repository:              https://github.com/janzlebiz/JCCF
-Governing Migration Commit SHA: cfa4001b37ee8bdeb9030b025fb7e06bc9fab37e
-Verified CI Run Commit SHA:     8d02d9b9748ab2c3a47618abc59be509bd6f2420
+Governing Migration Commit SHA: e624e95f74932441dfee90cad7a9cb4544f64d6d
+Verified CI Run Commit SHA:     e624e95f74932441dfee90cad7a9cb4544f64d6d
 Target Migration File:          migrations/20261112_001_personalization_engine.sql
-Target Migration SHA-256:       D24F82E587E31C238317D207ACB377DE5328C4A845FADF651598E25F266CECFE
+Target Migration SHA-256:       9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E
 Target Rollback File:           migrations/20261112_001_personalization_engine_rollback.sql
-Target Rollback SHA-256:        10721C96BDDDDEBFF2C1D8FAB60FC4D22EFB663B2BDBF191DA9611F3992A7960
+Target Rollback SHA-256:        33911582CB3FCD893A4286D71AB28CAEECEE1B56696EA840DE59A184BD5B4BD4
 Target Supabase Staging Ref:    [ Owner to specify: <staging-ref> ]
 
 PROPOSED DECISION:
