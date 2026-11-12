@@ -82,10 +82,12 @@ The commercial economics are classified under realistic cost assumptions incorpo
    - International Gross Volume = $\$6,495.00 \times 50\% = \$3,247.50\text{ USD}$.
    - $F_{intl} = \$3,247.50 \times 1.5\% = \mathbf{\$48.71\text{ USD}}$.
    - **Total Initial Platform Fees ($F_{initial}$):** $\$324.75 + \$250.00 + \$48.71 = \mathbf{\$623.46\text{ USD}}$.
-5. **Refund Accounting (Non-Double-Counted Policy Model):**
-   - **Assumption:** 2.0% refund rate (10 units refunded out of 500 orders).
-   - Customer gross refund amount: $10 \text{ orders} \times \$12.99 = \mathbf{\$129.90\text{ USD}}$.
-   - Provider retained platform fee: Lemon Squeezy retains its platform fee ($10 \times (\$12.99 \times 5.0\% + \$0.50) = \mathbf{\$11.50\text{ USD}}$).
+5. **Refund Accounting & Buyer-Country Assumption (Non-Double-Counted Policy Model):**
+   - **Assumption (Refund Rate):** 2.0% refund rate (10 units refunded out of 500 orders).
+   - **Assumption (Refund Buyer-Country Mix):** For the baseline model, refunded orders reflect domestic US purchases (base fee: 5.0% + $0.50 = $1.15/unit, total $11.50).
+     * *Sensitivity Analysis (International Refunds):* If all 10 refunded orders were international non-US transactions, the retained platform fee would include the +1.5% surcharge ($1.15 + $0.19485 = $1.345/unit, or $13.45 total retained fee). In that scenario, Lemon Squeezy deducts $129.90 - $13.45 = $116.45 from the payout balance (leaving $1.95 more in net merchant payout before bank fees). Modeling refunds under the base rate ($11.50 retained, $118.40 payout deduction) is the more conservative approach for net merchant payout.
+   - **Customer Gross Refund Amount:** $10 \text{ orders} \times \$12.99 = \mathbf{\$129.90\text{ USD}}$.
+   - **Provider Retained Platform Fee:** Lemon Squeezy retains its platform processing fee ($10 \times (\$12.99 \times 5.0\% + \$0.50) = \mathbf{\$11.50\text{ USD}}$).
    - **Non-Double-Counting Principle:** Because platform fees on all 500 orders ($\$623.46$) are already accounted for in items 2–4, retained fees ($\$11.50$) must **not** be deducted a second time.
    - **Official Refund Adjustment Rule:** Per Lemon Squeezy documentation ([docs.lemonsqueezy.com/help/payments/refunds-and-chargebacks](https://docs.lemonsqueezy.com/help/payments/refunds-and-chargebacks)), the deduction applied against the merchant payout balance is:
      $$\text{Refund Payout Adjustment } (R_{adj}) = \text{Customer Gross Refund } (\$129.90) - \text{Retained Platform Fee } (\$11.50) = \mathbf{\$118.40\text{ USD}}$$

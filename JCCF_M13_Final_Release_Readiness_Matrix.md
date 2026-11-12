@@ -59,20 +59,22 @@ PRICING & VOLUME PARAMETERS:
 - Gross Sales: 500 * $12.99 = $6,495.00 USD
 ```
 
-| Financial Component | Basis / Formula | Monthly Amount | Classification |
+| Financial Component | Basis / Exact Formula | Monthly Amount | Classification & Policy Treatment |
 |---|---|---|---|
-| **Gross Sales (500 @ $12.99)** | Top-line customer revenue | **\$6,495.00 USD** | `[VERIFIED]` Customer Payments |
-| **MoR Variable Base Fee (5.0%)** | 5.0% of Gross Sales | -\$324.75 USD | `[VERIFIED]` Lemon Squeezy Source Deduction |
-| **MoR Fixed Transaction Fee** | 500 orders @ \$0.50 USD | -\$250.00 USD | `[VERIFIED]` Lemon Squeezy Source Deduction |
-| **MoR International Surcharge (1.5%)**| Est. 50% non-US buyers ($6,495 * 1.5% * 0.5) | -\$48.71 USD | `[ASSUMPTION]` International non-US surcharge |
-| **MoR Payout Disbursement Fee (1.0%)**| 1% fee on bi-monthly bank transfers | -\$58.70 USD | `[VERIFIED]` International bank payout fee |
+| **Gross Sales (500 @ $12.99)** | Top-line customer revenue | **\$6,495.00 USD** | `[VERIFIED]` Scenario Input |
+| **MoR Variable Base Fee (5.0%)** | 5.0% on all 500 orders ($6,495 * 0.05) | -\$324.75 USD | `[VERIFIED]` Lemon Squeezy Source Deduction |
+| **MoR Fixed Transaction Fee** | $0.50 on all 500 orders (500 * $0.50) | -\$250.00 USD | `[VERIFIED]` Lemon Squeezy Source Deduction |
+| **MoR International Surcharge (1.5%)**| 1.5% on 50% non-US volume ($3,247.50 * 0.015) | -\$48.71 USD | `[ASSUMPTION]` 50% non-US buyer mix |
+| **Total Initial Platform Fees** | Base + Fixed + International Surcharge | **-\$623.46 USD** | Upfront platform fees on all 500 orders |
+| **Refund Payout Adjustment** | Customer return ($129.90) less retained fee ($11.50) | -\$118.40 USD | `[VERIFIED]` Policy deduction (not double-counted) |
+| **Net Payout Balance (Pre-Disbursement)**| Gross less Initial Fees and Refund Adjustment | **\$5,753.14 USD** | Actual payout pool for bank transfer |
+| **MoR Payout Disbursement Fee (1.0%)**| 1.0% on Net Payout Balance ($5,753.14 * 0.01) | -\$57.53 USD | `[VERIFIED]` International bank payout fee |
 | **Fixed Infrastructure (Supabase Pro)**| Pro DB & Storage ($25/mo) | -\$25.00 USD | `[ASSUMPTION]` If scaled past free tier |
 | **Fixed Infrastructure (Vercel Pro)** | Next.js Team Hosting ($20/mo) | -\$20.00 USD | `[ASSUMPTION]` Commercial team tier |
 | **Worker VM (Cloud VPS)** | 24/7 Background Rendering | -\$5.00 USD | `[ASSUMPTION]` Fly.io / Hetzner Tier |
 | **Variable Storage & Bandwidth** | Egress & Retained PDF Overages | -\$1.00 USD | `[ASSUMPTION]` CDN Mitigated |
-| **Refund Allowance Reserve** | Estimated 2% refund rate (10 units) | -\$129.90 USD | `[ASSUMPTION]` Customer Dispute Buffer |
-| **Non-Refundable Gateway Fees on Refunds** | 10 refunds @ retained gateway rate | -\$11.50 USD | `[ASSUMPTION]` MoR Retained Fees |
-| **Estimated Operating Contribution (EOC)**| **Gross less MoR Fees, Refund Adjustment, Payout Fee, Infra**| **\$5,644.61 USD** | `[RECOMMENDATION]` **86.91% Contribution Margin** |
+| **Total Realized Deductions** | Initial Fees + Refund Adj + Payout Fee + Infra | **-\$850.39 USD** | Total monthly deductions |
+| **Estimated Operating Contribution (EOC)**| **Gross Sales less Total Realized Deductions** | **\$5,644.61 USD** | `[RECOMMENDATION]` **86.91% Contribution Margin** |
 
 * `[CRITICAL FINANCIAL DISTINCTION]`: The **$5,644.61 USD** monthly figure is an **Estimated Operating Contribution (EOC)** prior to domestic Philippine taxes and bank FX conversion spreads. Exact formula: Gross ($6,495.00) - Initial MoR Fees ($623.46) - Net Refund Payout Adjustment ($118.40) - Bank Payout Fee ($57.53 on $5,753.14 payout pool) - Fixed Infra ($51.00) = **$5,644.61 USD**. Platform fees on refunded orders are not double-counted.
 * `[OPERATOR OBLIGATIONS]`:
