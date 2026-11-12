@@ -10,7 +10,13 @@
     <!-- ==================== PAGE 1: FRONT COVER ==================== -->
     <div class="page cover-page">
         <div class="cover-border">
-            <div class="cover-kicker">A Janzle Keepsake Story</div>
+            <div class="cover-kicker">
+                {% if answers.book_purpose == 'gift' %}
+                    A Gifted Keepsake Edition
+                {% else %}
+                    A Janzle Keepsake Story
+                {% endif %}
+            </div>
             <div>
                 <h1 class="cover-title">{{ answers.pet_name | default('Our Beloved Companion') | e }}</h1>
                 <div class="cover-subtitle">
@@ -18,6 +24,8 @@
                         A Tribute to an Eternal Companion
                     {% elif answers.life_stage == 'young' %}
                         The First Chapter of a Wonderful Journey
+                    {% elif answers.book_purpose == 'gift' %}
+                        A Story of Unconditional Love & Friendship
                     {% else %}
                         The Story of an Extraordinary Companion
                     {% endif %}
@@ -79,12 +87,18 @@
 
     <!-- ==================== PAGE 3: DEDICATION SPREAD ==================== -->
     <div class="page">
-        <div class="page-header"><span>Dedication</span><span>Forever in Our Hearts</span></div>
+        <div class="page-header"><span>Dedication</span><span>{% if answers.book_purpose == 'gift' %}A Special Gift{% else %}Forever in Our Hearts{% endif %}</span></div>
         <div class="dedication-box">
             <p class="dedication-quote">
                 “{{ answers.dedication_text | default('To our sweetest pet, thank you for filling our days with boundless laughter, soft cuddles, and unconditional devotion. You turned our house into a home.') | e }}”
             </p>
-            <div class="dedication-byline">— With all our love, {{ answers.owner_names | default('Your Family') | e }}</div>
+            <div class="dedication-byline">
+                {% if answers.book_purpose == 'gift' %}
+                    — Gifted with warmest love by {{ answers.owner_names | default('A Loving Friend') | e }}
+                {% else %}
+                    — With all our love, {{ answers.owner_names | default('Your Family') | e }}
+                {% endif %}
+            </div>
         </div>
         <div class="page-footer">Page 3 of 24</div>
     </div>
@@ -455,6 +469,7 @@
                 Janzle Creative Commerce Factory &bull; Subsystem M13<br>
                 Archival Keepsake Edition No. 1<br>
                 Compiled for {{ answers.pet_name | default('Our Companion') | e }} &bull; Format: 210mm x 210mm Square<br>
+                Edition Type: {% if answers.book_purpose == 'gift' %}Gift Keepsake Edition{% else %}Family Archival Edition{% endif %}<br>
                 Rendered with Jinja2 & CSS Paged Media &bull; All Rights Reserved
             </div>
         </div>

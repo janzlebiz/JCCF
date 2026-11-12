@@ -1,75 +1,83 @@
 # Janzle Creative Commerce Factory (JCCF)
-# Subsystem M13: Phase 1 Authorization & Governance Status
+# Subsystem M13: Phase 1 Authorization & Governance Status (v2.0)
 
 **Document ID:** `JCCF-STAT-AUTH-001`  
+**Version:** 2.0 (Owner Decision Reconciled)  
 **Date:** 12 November 2026  
 **Status:** Formal Authorization Register  
-**Current Operational State:** **PHASE 1 UNAUTHORIZED (HELD AT PHASE BOUNDARY)**  
+**Current Operational State:** **DECISIONS 1 & 2 APPROVED; DECISION 3 CONDITIONAL; DECISIONS 4 & 5 UNAUTHORIZED**  
 **Governing Authority:** Platform Owner  
 
 ---
 
 ## 1. Executive Summary
 
-In accordance with [AGENTS.md](file:///D:/Antigravity/JCCF/AGENTS.md) Rule 5, the JCCF Engineering Workflow Standard, and the platform owner's explicit selection (**"Hold: Review architecture specifications and adjust requirements first"**), all active development, migration execution, and credential configuration remain **strictly blocked**.
-
-Pre-implementation specifications, templates, schemas, and verification tests are 100% complete and verified locally. No implementation work will commence without individual, explicit owner authorization.
+On 12 November 2026, the JCCF Platform Owner reviewed the pre-implementation verification evidence and formally registered the following binding determinations:
+- **Decision 1 (Approved):** Conceptual and architectural approval of Subsystem M13 (Interactive Personalization Engine) as a reusable platform capability. Does not authorize implementation.
+- **Decision 2 (Approved):** Scope lock for Janzle PetStory as a digital-only 24-page PDF keepsake MVP. Physical POD and mobile applications are strictly excluded.
+- **Decision 3 (Conditionally Endorsed):** Lemon Squeezy is endorsed as the candidate Merchant of Record, subject to official provider evidence and successful Philippine KYC onboarding. Credential configuration remains blocked.
+- **Decision 4 (Not Authorized):** Development and staging database migrations remain strictly unauthorized. Zero SQL scripts have been executed.
+- **Decision 5 (Not Authorized):** Phase 1 application engineering remains strictly unauthorized. Zero production code has been modified or deployed.
 
 ---
 
-## 2. Independent Authorization Decision Register
-
-The five required authorization decisions are decoupled. Authorizing an architectural concept or provider choice does not authorize applying database migrations, spending capital, or deploying code.
+## 2. Independent Decision Status Register
 
 ```
 +----------------------------------------------------------------------------------------------------+
 | PHASE 1 INDEPENDENT DECISION REGISTER                                                              |
 +----------------------------------------------------------------------------------------------------+
-| Decision 1: Subsystem M13 Reusable Architecture  --> STATUS: HELD (Awaiting Owner Review)         |
-| Decision 2: PetStory Digital-Only Scope          --> STATUS: HELD (Awaiting Owner Review)         |
-| Decision 3: Lemon Squeezy Merchant of Record     --> STATUS: HELD (Awaiting Owner Review)         |
-| Decision 4: Dev/Staging DB Migration Execution   --> STATUS: BLOCKED / UNAUTHORIZED                |
-| Decision 5: Phase 1 Engineering Commencement     --> STATUS: BLOCKED / UNAUTHORIZED                |
+| Decision 1: Subsystem M13 Reusable Architecture  --> STATUS: [APPROVED] (Architectural Only)       |
+| Decision 2: PetStory Digital-Only MVP Scope      --> STATUS: [APPROVED] (Scope Locked to 24p PDF)   |
+| Decision 3: Lemon Squeezy Merchant of Record     --> STATUS: [CONDITIONALLY ENDORSED] (PH KYC Req)  |
+| Decision 4: Dev/Staging DB Migration Execution   --> STATUS: [NOT AUTHORIZED / BLOCKED]            |
+| Decision 5: Phase 1 Engineering Commencement     --> STATUS: [NOT AUTHORIZED / BLOCKED]            |
 +----------------------------------------------------------------------------------------------------+
 ```
 
-### Detailed Decision Status Breakdown
+### Detailed Decision Breakdown
 
-| Decision ID | Scope & Subject | Recommendation | Current Status | Prerequisites for Approval |
-|---|---|---|---|---|
-| **DEC-01** | **Subsystem M13 Architecture** | Adopt M13 Interactive Personalization Engine as a reusable JCCF subsystem. | `[HELD]` | Review `JCCF_M13_Architecture_Remediation_Report.md`. |
-| **DEC-02** | **PetStory MVP Scope** | Restrict first pilot to 24-page digital PDF keepsake; strictly defer physical POD and mobile app. | `[HELD]` | Review `petstory_v1_schema.json` and `JCCF_PetStory_Verified_Sample_24p.pdf`. |
-| **DEC-03** | **Merchant of Record Choice** | Select Lemon Squeezy for international sales operated from Philippines (5% + \$0.50, local PHP bank rails). | `[HELD]` | Review payout schedule and fee structure in remediation report. |
-| **DEC-04** | **Dev/Staging Migration** | Apply `20261112_001_personalization_engine.sql` to Supabase development database. | `[BLOCKED]` | Explicit owner command; local/staging database instance confirmed ready. |
-| **DEC-05** | **Phase 1 Engineering** | Scaffold Next.js questionnaire wizard and FastAPI session intake endpoints. | `[BLOCKED]` | Decisions 1 through 4 confirmed; Phase 1 sprint authorized. |
+| Decision ID | Subject & Scope | Owner Determination | Effective Boundaries & Invariants |
+|---|---|---|---|
+| **DEC-01** | **Subsystem M13 Architecture** | **APPROVED** | Reusable subsystem design accepted. Does not permit code changes or migrations. |
+| **DEC-02** | **PetStory MVP Scope** | **APPROVED** | Strict digital-only 24-page keepsake PDF scope locked. Zero POD or native app scope. |
+| **DEC-03** | **Merchant of Record Candidate**| **CONDITIONALLY ENDORSED** | Grounded in official documentation; live onboarding/credentials held until Phase 2. |
+| **DEC-04** | **Dev/Staging Migration** | **NOT AUTHORIZED** | `20261112_001_personalization_engine.sql` remains unexecuted. Zero DB state created. |
+| **DEC-05** | **Phase 1 Engineering** | **NOT AUTHORIZED** | No frontend wizard or FastAPI route implementation permitted. |
 
 ---
 
-## 3. Strict Execution Invariants & Environmental Reality
+## 3. Verified Repository State & Boundary Invariants
 
-The following facts are verified and actively enforced in the repository:
-* `[VERIFIED]` **Database State:** Zero SQL migrations have been executed. No tables have been created or modified in any live Supabase instance.
-* `[VERIFIED]` **Application Code State:** Zero production application files have been modified or deployed.
-* `[VERIFIED]` **Credentials & Payments:** Zero live API keys, Stripe/Lemon Squeezy credentials, or webhook secrets exist in environment files or repository commits.
-* `[VERIFIED]` **Capital Outlay:** Zero financial commitments or software subscriptions have been initiated. Operating budget remains at **\$0.00**.
+The repository was audited to confirm compliance with the owner's restrictions:
+* `[VERIFIED]` **Database State:** Exactly 0 database migrations have been executed. No tables have been created in any Supabase instance.
+* `[VERIFIED]` **Application Code State:** Exactly 0 core application code files have been modified or deployed.
+* `[VERIFIED]` **Credentials & Payments:** Exactly 0 API keys, Stripe/Lemon Squeezy credentials, or webhook secrets exist in environment files or git history.
+* `[VERIFIED]` **Capital Outlay:** Operating expenditure remains at **\$0.00**.
+* `[VERIFIED]` **Empirical Deliverables Retained:**
+  - `JCCF_PetStory_Verified_Sample_24p.pdf` (211,983 bytes, fallback quotes edition)
+  - `JCCF_PetStory_Raster_Verified_24p.pdf` (274,622 bytes, 10 raster images embedded)
+  - `test_hostile_input_sanitization.py` (XSS and template injection test suite, 100% pass)
+  - `templates/petstory_v1/style.css` (Remediated WCAG AAA typography)
 
 ---
 
 ## 4. Next Steps for Platform Owner
 
 The platform owner may:
-1. Continue reviewing the architecture and cross-reference documents:
-   * [JCCF_CPL_QEL_CROSS_REFERENCE.md](file:///D:/Antigravity/JCCF/JCCF_CPL_QEL_CROSS_REFERENCE.md)
-   * [JCCF_GOVERNANCE_CONSISTENCY_REPORT.md](file:///D:/Antigravity/JCCF/JCCF_GOVERNANCE_CONSISTENCY_REPORT.md)
-   * [JCCF_M13_Architecture_Remediation_Report.md](file:///D:/Antigravity/JCCF/JCCF_M13_Architecture_Remediation_Report.md)
-2. Authorize decisions individually or collectively by replying:
-   * *"Approve Decisions 1, 2, and 3"* (Approves architecture, scope, and provider; holds database and code).
-   * *"Approve All Decisions — Begin Phase 1"* (Authorizes staging migration and engineering).
-   * *"Hold"* (Keeps system in pre-implementation specification review).
+1. Review the revised pre-implementation verification evidence package:
+   - [JCCF_M13_VERIFICATION_EVIDENCE_GAP_REPORT.md](file:///d:/Antigravity/JCCF/JCCF_M13_VERIFICATION_EVIDENCE_GAP_REPORT.md)
+   - [JCCF_M13_RENDER_REPRODUCIBILITY_REPORT.md](file:///d:/Antigravity/JCCF/JCCF_M13_RENDER_REPRODUCIBILITY_REPORT.md)
+   - [JCCF_M13_ACCESSIBILITY_AUDIT.md](file:///d:/Antigravity/JCCF/JCCF_M13_ACCESSIBILITY_AUDIT.md)
+   - [JCCF_EV_PAY_001_PHILIPPINES_PAYOUT_FEASIBILITY.md](file:///d:/Antigravity/JCCF/JCCF_EV_PAY_001_PHILIPPINES_PAYOUT_FEASIBILITY.md)
+   - [JCCF_M13_Final_Release_Readiness_Matrix.md](file:///d:/Antigravity/JCCF/JCCF_M13_Final_Release_Readiness_Matrix.md)
+2. Issue an updated authorization instruction when ready:
+   - *"Authorize Decision 4"* (Authorizes development database migration only).
+   - *"Authorize Decisions 4 and 5 — Begin Phase 1"* (Authorizes development database migration and Phase 1 sprint).
+   - *"Maintain Hold"* (Maintains current halted operational state).
 
 ---
 
 ## 5. Formal Operational Statement
 
-**Governance consistency remediation complete. Awaiting owner review. M13 Phase 1 remains unauthorized.**
-
+**Pre-implementation verification remediation complete. Awaiting owner review. Decisions 1 and 2 approved; Decision 3 conditional; Decisions 4 and 5 unauthorized.**

@@ -67,7 +67,7 @@ html, body {
     right: 0;
     text-align: center;
     font-size: 8pt;
-    color: #7A726D;
+    color: #5A524D;
     letter-spacing: 0.5px;
     font-weight: 500;
 }
@@ -83,8 +83,8 @@ html, body {
     font-size: 6.5pt;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: #A89F98;
-    border-bottom: 0.5pt solid #EDE7E1;
+    color: #5C544E;
+    border-bottom: 0.5pt solid #D9D2CB;
     padding-bottom: 1.5mm;
 }
 
@@ -117,8 +117,8 @@ html, body {
 .palette-warm_sand {
     --cover-bg: #F5EFEB;
     --cover-text: #2D2320;
-    --cover-accent: #8C786E;
-    --card-accent: #8C786E;
+    --cover-accent: #6E5A50;
+    --card-accent: #6E5A50;
 }
 
 /* Dusty Rose: Deep Berry (#732838) + White Text (#FFFFFF) -> 10.05:1 (AAA) */
