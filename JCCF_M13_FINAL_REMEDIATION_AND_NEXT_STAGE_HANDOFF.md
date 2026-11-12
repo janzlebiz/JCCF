@@ -343,3 +343,4 @@ All defect categories identified by review have been closed with reproducible ev
   5. `JCCF_REP_FINAL_CORRECTIONS_001.md` (v5.0)
   6. `tests/test_migration_scenarios.py` (New test suite, 12 scenarios)
   7. `JCCF_M13_FINAL_REMEDIATION_AND_NEXT_STAGE_HANDOFF.md` (New consolidated report)
+
