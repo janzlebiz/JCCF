@@ -35,11 +35,13 @@ Before Decision 4 can be requested or authorized, the platform operator must con
 Execute the following diagnostic read-only queries against the staging database prior to running the migration:
 
 ```sql
--- PREFLIGHT CHECK 1: Verify PostgreSQL Version >= 14
+-- PREFLIGHT CHECK 1: Verify PostgreSQL Version >= 14 (Native gen_random_uuid support)
 SELECT version();
 
--- PREFLIGHT CHECK 2: Verify pgcrypto extension availability
-SELECT extname, extversion FROM pg_extension WHERE extname = 'pgcrypto';
+-- PREFLIGHT CHECK 2: Verify gen_random_uuid() function availability
+-- Note: PostgreSQL 13+ includes gen_random_uuid() natively in the core distribution.
+-- pgcrypto extension is NOT required or created by migration 20261112_001_personalization_engine.sql.
+SELECT gen_random_uuid();
 
 -- PREFLIGHT CHECK 3: Verify existing public schema tables (products, orders)
 SELECT table_name 
@@ -52,10 +54,11 @@ SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated', 'service
 ```
 
 ### Preflight Invariants
-* If `pgcrypto` is not installed, the migration script issues `CREATE EXTENSION IF NOT EXISTS pgcrypto;`.
-* If `public.products` does not exist, the conditional block skips `fk_personalization_templates_product` without error.
-* If `public.orders` does not exist, the conditional block skips `fk_order_customizations_order` without error.
-* Roles `anon`, `authenticated`, and `service_role` must exist (standard Supabase default).
+* **UUID Generation:** `gen_random_uuid()` is natively built into PostgreSQL 13+ (standard in Supabase PostgreSQL 15+). The migration does **not** create or require the `pgcrypto` extension.
+* **Conditional Foreign Keys:**
+  - If `public.products` does not exist, the conditional block skips `fk_personalization_templates_product` without error.
+  - If `public.orders` does not exist, the conditional block skips `fk_order_customizations_order` without error.
+* **Role Permissions:** Standard Supabase roles `anon`, `authenticated`, and `service_role` must exist before running privilege grant/revoke blocks.
 
 ---
 
@@ -99,9 +102,10 @@ The migration introduces:
 If Decision 4 is authorized and subsequent staging tests detect regression or failure:
 1. Execute `migrations/20261112_001_personalization_engine_rollback.sql`.
 2. The rollback script:
-   - Drops all 4 RLS policies.
-   - Drops all 3 automated triggers and the timestamp update function.
+   - Drops all 4 M13 RLS policies.
+   - Drops all 3 M13 automated updated_at triggers.
    - Drops tables `order_customizations`, `customization_sessions`, and `personalization_templates` via `CASCADE`.
+   - **Dependency-Safe Function Cleanup:** Queries `information_schema.triggers` before dropping `public.set_current_timestamp_updated_at()`. If other database tables depend on the function, it is safely preserved with a diagnostic notice.
 3. Verify clean staging state:
    ```sql
    SELECT table_name FROM information_schema.tables 

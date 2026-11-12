@@ -68,26 +68,55 @@ To resolve outstanding provider uncertainties, official documentation from **Lem
 
 ---
 
-## 4. Reconciled Financial Assumptions (500 Orders/Month Model)
+## 4. Reconciled Financial Assumptions & Exact Formulas (500 Orders/Month Model)
 
-The commercial economics are classified under realistic cost assumptions incorporating international transaction fees:
+The commercial economics are classified under realistic cost assumptions incorporating international transaction fees and bi-monthly bank payout disbursement costs. The reproducible model script is committed at `tests/audit_eoc_model.py`.
 
-| Financial Component | Basis / Formula | Monthly Amount | Classification & Transition Trigger |
+### 4.1 Underlying Assumptions & Formulas
+1. **Gross Sales ($G$):** $500 \text{ orders} \times \$12.99 = \mathbf{\$6,495.00\text{ USD}}$.
+2. **MoR Base Platform Fee ($F_{base}$):** $5.0\% \times \$6,495.00 = \mathbf{\$324.75\text{ USD}}$.
+3. **MoR Fixed Fee ($F_{fixed}$):** $500 \text{ orders} \times \$0.50 = \mathbf{\$250.00\text{ USD}}$.
+4. **Buyer Country Mix & International Surcharge ($F_{intl}$):**
+   - **Assumption:** 50% US buyers (0.0% surcharge), 50% non-US international buyers (+1.5% surcharge).
+   - International Gross Volume = $\$6,495.00 \times 50\% = \$3,247.50\text{ USD}$.
+   - $F_{intl} = \$3,247.50 \times 1.5\% = \mathbf{\$48.71\text{ USD}}$.
+5. **Net Settled Merchant Balance ($B_{settled}$):**
+   - $B_{settled} = G - F_{base} - F_{fixed} - F_{intl} = \$6,495.00 - \$324.75 - \$250.00 - \$48.71 = \mathbf{\$5,871.54\text{ USD}}$.
+6. **Payout Disbursement Fee ($F_{payout}$):**
+   - Lemon Squeezy officially assesses a **1.0% fee on international bank transfers** outside the US.
+   - Exact: $1.0\% \times \$5,871.54 = \mathbf{\$58.72\text{ USD}}$ (or $\$58.70\text{ USD}$ with bi-monthly schedule truncation).
+7. **Infrastructure Fixed Overhead ($I_{fixed}$):**
+   - Supabase Pro DB & Storage: $\$25.00/\text{mo}$.
+   - Vercel Team Hosting: $\$20.00/\text{mo}$.
+   - Python VPS Worker: $\$5.00/\text{mo}$.
+   - Asset Storage & Egress: $\$1.00/\text{mo}$.
+   - Total $I_{fixed} = \mathbf{\$51.00\text{ USD}}$.
+8. **Refund Buffer & Retained Gateway Fees ($R_{total}$):**
+   - **Assumption:** 2.0% refund rate (10 units refunded).
+   - Customer Refund Reserve: $10 \times \$12.99 = \$129.90\text{ USD}$.
+   - Retained MoR Fees on Refunds: $10 \times (\$12.99 \times 5\% + \$0.50) = 10 \times \$1.15 = \$11.50\text{ USD}$.
+   - Total $R_{total} = \$129.90 + \$11.50 = \mathbf{\$141.40\text{ USD}}$.
+
+### 4.2 Reconciled Financial Breakdown Table
+
+| Financial Component | Basis / Exact Formula | Monthly Amount | Classification & Transition Trigger |
 |---|---|---|---|
-| **Gross Sales (500 @ $12.99)** | Top-line customer revenue | **\$6,495.00 USD** | `[VERIFIED]` Customer Payments |
-| **MoR Variable Base Fee (5.0%)** | 5.0% of Gross Sales | -\$324.75 USD | `[VERIFIED]` Source deduction |
-| **MoR Fixed Transaction Fee** | 500 orders @ \$0.50 USD | -\$250.00 USD | `[VERIFIED]` Source deduction |
-| **MoR International Surcharge (1.5%)**| Est. 50% non-US buyers ($6.495 * 1.5% * 0.5) | -\$48.71 USD | `[ASSUMPTION]` Provider international surcharge |
-| **MoR Payout Disbursement Fee (1.0%)**| 1% fee on bi-monthly bank transfers | -\$58.70 USD | `[VERIFIED]` Documented international bank fee |
+| **Gross Sales (500 @ $12.99)** | Top-line customer revenue | **\$6,495.00 USD** | `[VERIFIED]` Top-line customer revenue |
+| **MoR Variable Base Fee (5.0%)** | $5.0\% \times \$6,495.00$ | -\$324.75 USD | `[VERIFIED]` Source deduction |
+| **MoR Fixed Transaction Fee** | $500 \text{ orders} \times \$0.50$ | -\$250.00 USD | `[VERIFIED]` Source deduction |
+| **MoR International Surcharge (1.5%)**| $1.5\% \times (\$6,495.00 \times 50\% \text{ intl})$ | -\$48.71 USD | `[ASSUMPTION]` 50% non-US buyer mix |
+| **MoR Payout Disbursement Fee (1.0%)**| $1.0\% \times \$5,871.54 \text{ net settled}$ | -\$58.72 USD | `[VERIFIED]` 1% intl bank transfer fee |
 | **Fixed Infrastructure (Supabase Pro)**| Pro DB & Storage ($25/mo) | -\$25.00 USD | `[ASSUMPTION]` If scaled past free tier |
 | **Fixed Infrastructure (Vercel Pro)** | Next.js Team Hosting ($20/mo) | -\$20.00 USD | `[ASSUMPTION]` Commercial team tier |
 | **Worker VM (Cloud VPS)** | 24/7 Background Rendering | -\$5.00 USD | `[ASSUMPTION]` Fly.io / Hetzner Tier |
 | **Variable Storage & Bandwidth** | Egress & Retained PDF Overages | -\$1.00 USD | `[ASSUMPTION]` CDN Mitigated |
-| **Refund Allowance (2.0%)** | Estimated 2% refund rate (10 units) | -\$129.90 USD | `[ASSUMPTION]` Customer Dispute Buffer |
-| **Non-Refundable Gateway Fees** | 10 refunds @ retained gateway rate | -\$11.50 USD | `[ASSUMPTION]` MoR Retained Fees |
-| **Estimated Operating Contribution (EOC)**| **Gross less MoR Fees, Fixed Infra, Refunds**| **\$5,620.44 USD** | `[RECOMMENDATION]` **86.5% Contribution Margin** |
+| **Refund Allowance Reserve** | Estimated 2% refund rate (10 units) | -\$129.90 USD | `[ASSUMPTION]` Customer dispute buffer |
+| **Non-Refundable Gateway Fees on Refunds** | 10 refunds @ retained gateway rate | -\$11.50 USD | `[ASSUMPTION]` MoR retained fees on refunds |
+| **Estimated Operating Contribution (EOC)**| **Gross less MoR Fees, Fixed Infra, Refunds**| **\$5,620.42 USD** | `[RECOMMENDATION]` **86.53% Contribution Margin** |
 
-* `[CRITICAL FINANCIAL DISTINCTION]`: The **$5,620.44 USD** monthly figure is an **Estimated Operating Contribution (EOC)** prior to domestic Philippine taxes and bank FX conversion spreads.
+*(Note: Prior draft reported \$5,620.44 based on a rounded \$58.70 payout disbursement fee. The exact mathematical deduction of \$58.72 yields **\$5,620.42 USD**, an immaterial difference of \$0.02. Both figures confirm an ~86.5% contribution margin).*
+
+* `[CRITICAL FINANCIAL DISTINCTION]`: The **$5,620.42 USD** monthly figure is an **Estimated Operating Contribution (EOC)** prior to domestic Philippine taxes and bank FX conversion spreads.
 * `[OPERATOR OBLIGATIONS]`:
   - **Philippine Taxation:** Bureau of Internal Revenue (BIR) taxes (12% VAT or 1%–3% percentage tax, plus annual income tax) are operator liabilities settled directly with the Philippine government.
   - **Bank FX Conversion:** Local bank foreign exchange spreads (USD to PHP) reduce net converted pesos by approximately 1.5% to 2.5% upon local withdrawal.
