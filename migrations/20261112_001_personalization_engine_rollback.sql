@@ -27,3 +27,4 @@ DROP TABLE IF EXISTS public.customization_sessions CASCADE;
 DROP TABLE IF EXISTS public.personalization_templates CASCADE;
 
 COMMIT;
+
