@@ -35,6 +35,7 @@ To resolve outstanding provider uncertainties, official documentation from **Lem
 | **Payout Disbursement Fees**| `https://docs.lemonsqueezy.com/help/payouts/payout-fees` | 2026-11-12 | International bank account: 1% fee. International PayPal: 3% fee (max $30). |
 | **Platform E-commerce Fees**| `https://docs.lemonsqueezy.com/help/getting-started/pricing` | 2026-11-12 | 5% + $0.50 base. International non-US buyers: +1.5%. PayPal transactions: +1.5%. |
 | **Paddle Vendor Eligibility**| `https://www.paddle.com/legal/terms` | 2026-11-12 | Philippines supported for vendor onboarding via Payoneer / Wire Transfer. |
+| **Refunds & Retained Fees Policy**| `https://docs.lemonsqueezy.com/help/payments/refunds-and-chargebacks` | 2026-11-12 | Lemon Squeezy retains platform fee on refunds; refunded amounts deducted from payout. |
 
 ---
 
@@ -91,11 +92,12 @@ The commercial economics are classified under realistic cost assumptions incorpo
    - Python VPS Worker: $\$5.00/\text{mo}$.
    - Asset Storage & Egress: $\$1.00/\text{mo}$.
    - Total $I_{fixed} = \mathbf{\$51.00\text{ USD}}$.
-8. **Refund Buffer & Retained Gateway Fees ($R_{total}$):**
-   - **Assumption:** 2.0% refund rate (10 units refunded).
-   - Customer Refund Reserve: $10 \times \$12.99 = \$129.90\text{ USD}$.
-   - Retained MoR Fees on Refunds: $10 \times (\$12.99 \times 5\% + \$0.50) = 10 \times \$1.15 = \$11.50\text{ USD}$.
-   - Total $R_{total} = \$129.90 + \$11.50 = \mathbf{\$141.40\text{ USD}}$.
+8. **Refund Allowance & Retained Fees Breakdown ($R_{total}$):**
+   - **Provider Policy Grounding:** Per Lemon Squeezy official refund policy ([docs.lemonsqueezy.com/help/payments/refunds-and-chargebacks](https://docs.lemonsqueezy.com/help/payments/refunds-and-chargebacks)), when an order is refunded, Lemon Squeezy deducts the refunded customer amount but retains its initial processing fee. The merchant absorbs both the revenue loss and the non-refundable gateway fee.
+   - **Assumption:** 2.0% refund rate (10 units refunded out of 500 orders).
+   - **Customer Refund Reserve:** $10 \text{ orders} \times \$12.99 = \mathbf{\$129.90\text{ USD}}$ (gross funds returned to buyers).
+   - **Retained MoR Fees on Refunds:** $10 \times (\$12.99 \times 5.0\% + \$0.50) = 10 \times (\$0.65 + \$0.50) = \mathbf{\$11.50\text{ USD}}$ (fees retained by provider).
+   - **Total Net Refund Cost:** $\$129.90 + \$11.50 = \mathbf{\$141.40\text{ USD}}$.
 
 ### 4.2 Reconciled Financial Breakdown Table
 

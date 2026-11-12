@@ -97,15 +97,16 @@ The migration introduces:
 
 ---
 
-## 6. Staging Rollback Plan
+## 6. Staging Rollback Plan & Cascade Boundary Protection
 
 If Decision 4 is authorized and subsequent staging tests detect regression or failure:
 1. Execute `migrations/20261112_001_personalization_engine_rollback.sql`.
-2. The rollback script:
-   - Drops all 4 M13 RLS policies.
-   - Drops all 3 M13 automated updated_at triggers.
-   - Drops tables `order_customizations`, `customization_sessions`, and `personalization_templates` via `CASCADE`.
-   - **Dependency-Safe Function Cleanup:** Queries `information_schema.triggers` before dropping `public.set_current_timestamp_updated_at()`. If other database tables depend on the function, it is safely preserved with a diagnostic notice.
+2. The rollback script implements a multi-tier safety sequence:
+   - Drops all 4 M13 RLS policies explicitly.
+   - Drops all 3 M13 automated `updated_at` triggers explicitly.
+   - **Explicit Foreign Key Severing:** Drops foreign key constraints (`fk_order_customizations_order`, `order_customizations_session_id_fkey`, `customization_sessions_template_id_fkey`, `fk_personalization_templates_product`) explicitly before dropping tables. This ensures `DROP TABLE ... CASCADE` does not propagate unintended side-effects or lock parent tables like `products` or `orders`.
+   - Drops tables `order_customizations`, `customization_sessions`, and `personalization_templates` cleanly.
+   - **Catalog-Level Procedure Inspection (pg_catalog):** Queries `pg_proc` and `pg_trigger` by OID (`t.tgfoid = p.oid AND NOT t.tgisinternal`) rather than unreliable text searches. If any active trigger elsewhere in the database references `public.set_current_timestamp_updated_at()`, the function is safely preserved with a diagnostic notice.
 3. Verify clean staging state:
    ```sql
    SELECT table_name FROM information_schema.tables 
