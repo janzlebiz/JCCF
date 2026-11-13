@@ -12,9 +12,9 @@
 |---|---|
 | **Target Project Ref** | `ammsjbcpbspisbyynaga` (`JCCF`, `ap-northeast-2`, `PostgreSQL 17.11`) |
 | **Corrective Migration** | `migrations/20261113_1335_m13_production_hardening.sql` |
-| **Migration SHA-256** | `35A99DE63EF547C16808E6ECF12F9ED8DAD17CBA57110A9B52B1109EE0A48054` |
+| **Migration SHA-256** | `4F74EC3B6660B49367639B0AD1981AA637F1D130F00C8E66163F46B23594A5EA` |
 | **Corrective Rollback** | `migrations/20261113_1335_m13_production_hardening_rollback.sql` |
-| **Rollback SHA-256** | `D98B1807284C4FCFA860D8EF9143708072C4B04050C91EB815FF53A7E73066F2` |
+| **Rollback SHA-256** | `3D10A9C212250C270FC4E337B1539ED51B78BD0D42C29B09AD9D6F62AE8347C6` |
 | **Required Operator Role** | `postgres` (via `postgres.ammsjbcpbspisbyynaga` over IPv4 Session Pooler `aws-1-ap-northeast-2.pooler.supabase.com:5432`, `sslmode=require`) |
 | **Session Timeouts** | `SET lock_timeout = '5000ms';` and `SET statement_timeout = '30000ms';` |
 | **Official Execution Method** | Persistent interactive `psql` session using `\i migrations/20261113_1335_m13_production_hardening.sql` (without `ON_ERROR_STOP=1`) |
