@@ -117,5 +117,5 @@ On every commit and pull request, GitHub Actions launches parallel Ubuntu runner
 
 **Verdict:** `APPROVED — 100% COMPATIBLE WITH POSTGRESQL 17`.
 
-Subsystem M13 is fully certified to execute against PostgreSQL 17.11 on Supabase staging without requiring any modifications to the governing migration or rollback SQL.
+Subsystem M13 is certified against **PostgreSQL 17.11** (26/26 integration tests PASSED locally on `PostgreSQL 17.11 on x86_64-windows`; live Supabase staging target `ammsjbcpbspisbyynaga` verified at `PostgreSQL 17.11 on aarch64-unknown-linux-gnu`, `17.11.0.019`, with all 11 read-only preflight checks passing). Local PostgreSQL 17.12 testing was not executed separately because 17.11 matches the live Supabase target exactly and the CI `postgres:17-alpine` matrix tests latest 17.x automatically.
 

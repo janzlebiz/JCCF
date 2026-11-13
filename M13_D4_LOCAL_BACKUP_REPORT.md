@@ -1,14 +1,14 @@
 # JCCF Subsystem M13 — D4 Local Supabase Backup & Recoverability Report
 **Document ID:** `JCCF-M13-D4-LOCAL-BACKUP-REPORT`  
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Date:** November 13, 2026  
 **Repository:** `https://github.com/janzlebiz/JCCF`  
 **Target Project:** JCCF (Personalization Engine)  
 **Supabase Project Reference:** `ammsjbcpbspisbyynaga`  
-**Target Database Engine:** PostgreSQL 17.11  
+**Target Database Engine:** PostgreSQL 17.11 (`PostgreSQL 17.11 on aarch64-unknown-linux-gnu`)  
 **Supabase CLI Version:** `3.1.0`  
 **Status:** Pre-Execution Safety Artifact — Temporary Owner-Approved Risk Mitigation  
-**Execution State:** `BLOCKED PENDING OPERATOR STAGING CREDENTIAL RELEASE`
+**Execution State:** `VERIFIED & RESTORE-TESTED (READY FOR STAGE B RELEASE REVIEW)`
 
 ---
 
@@ -145,11 +145,43 @@ To ensure that the captured local backup is genuine and recoverable, the operato
 
 ---
 
-## 7. Current Readiness Verdict
+## 7. Executed Backup & Restoration Verification Evidence (v1.1)
 
-**Verdict:** `STAGE B BLOCKED PENDING BACKUP EXTRACTION PREREQUISITES`.
+**Verdict:** `BACKUP CAPTURED, CHECKSUMMED & RESTORE-VERIFIED ON POSTGRESQL 17.11`.
 
-1. **PostgreSQL 17 Engine Compatibility:** `PASS` (Verified locally and in CI).
-2. **Local Backup Extraction:** `BLOCKED` (Requires authorized Supabase token or IPv4 connection pooler URL for project `ammsjbcpbspisbyynaga`).
-3. **Execution Safety Boundary:** Physical DDL execution (`migrations/20261112_001_personalization_engine.sql`) remains strictly prohibited until Stage B prerequisites are fulfilled.
+### 7.1 Access & Connectivity Remediation
+* **Supabase CLI Authorization:** Re-authenticated via `npx supabase login`; `npx supabase projects list` confirmed access to `ammsjbcpbspisbyynaga` (`JCCF`, region `ap-northeast-2`, `ACTIVE_HEALTHY`, engine `17.11.0.019`).
+* **IPv4 Connectivity:** Connected via Supabase IPv4 Session Pooler (`aws-1-ap-northeast-2.pooler.supabase.com:5432`, user `postgres.ammsjbcpbspisbyynaga`, `sslmode=require`, credentials stored locally in `%APPDATA%\postgresql\pgpass.conf`).
+* **Identity Verification:** Read-only query `SELECT version(), current_database(), current_user;` returned `PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit`, `postgres`, `postgres`.
+
+### 7.2 Backup Capture Manifest
+* **Backup Directory (Outside Git):** `D:\JCCF_SECURE_BACKUPS\M13\staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC`
+* **Start / Completion (UTC):** `2026-11-13T02:28:27.686288+00:00` $\rightarrow$ `2026-11-13T02:29:16.338319+00:00`
+* **Tools:** `pg_dump (PostgreSQL) 17.11`, `pg_dumpall (PostgreSQL) 17.11`, Supabase CLI `3.1.0` exclusion filters.
+* **Return Codes & Stderr:** `roles=0`, `schema=0`, `data=0` (0 warnings, 0 errors).
+
+| Artifact | Size (Bytes) | SHA-256 Checksum | Notes |
+|---|---|---|---|
+| `roles.sql` | `6301` | `A3C83C6ADBDD086F42846374E78249493FE82CCD949F6B2AD0ED93282AD21335` | Cluster roles (`--roles-only --no-role-passwords`) |
+| `schema.sql` | `39515` | `792F534CD67A541C9778E770C099C47EC79C5496DAD015531BB613456AE8409A` | Public schema & extensions DDL (`--schema-only`) |
+| `data.sql` | `4750` | `3213414D31DA150DCCE6D4EB68B3995E3F55372C8FDEEFB6E4A5984C1D134993` | 0 application rows (fresh empty DB; `auth.refresh_tokens_id_seq` setval only) |
+| `backup_metadata.json` | `2285` | Recorded in `checksums.sha256` | Full exclusions & execution telemetry (0 secrets) |
+| `checksums.sha256` | `319` | — | SHA-256 manifest for all artifacts |
+
+* **Explicit Exclusions:** Supabase-managed internal schemas (`information_schema`, `pg_*`, `_analytics`, `_realtime`, `_supavisor`, `auth`, `etl`, `extensions`, `pgbouncer`, `realtime`, `storage`, `supabase_functions`, `supabase_migrations`, `cron`, `dbdev`, `graphql`, `graphql_public`, `net`, `pgmq`, `pgsodium`, `pgsodium_masks`, `pgtle`, `repack`, `tiger`, `tiger_data`, `timescaledb_*`, `_timescaledb_*`, `topology`, `vault`) for schema dump; internal migration tables (`auth.schema_migrations`, `storage.migrations`, `supabase_functions.migrations`) for data dump.
+
+### 7.3 Local PostgreSQL 17.11 Restoration Verification
+* **Target:** Disposable local `PostgreSQL 17.11` cluster (port `5434`, database `jccf_restore_verify`, destroyed immediately after verification).
+* **Execution Results:** `roles.sql` RC=`0`, `schema.sql` RC=`0`, `data.sql` RC=`0`.
+* **Verified Restored State:**
+  - `roles_check`: `anon,authenticated,authenticator,service_role,supabase_admin` present.
+  - `schemas_check`: `extensions,public,vault` present.
+  - `public_tables`: `NONE (0 tables)` (matches live source).
+  - `public_funcs`: `rls_auto_enable` (matches live source).
+  - `event_triggers`: `ensure_rls` (matches live source).
+* **Documented Platform Exclusions / Expected Vanilla PG 17.11 Warnings:**
+  - `roles.sql`: Expected `role "postgres" already exists` and `permission denied to grant privileges as role "supabase_admin"` (non-superuser `postgres` vs managed `supabase_admin`).
+  - `schema.sql`: Supabase-managed `supabase_vault` extension/functions/views and `extensions.pgrst_*` / `extensions.grant_pg_*` event trigger functions are absent on vanilla PG 17.11 and documented as managed platform objects.
+  - `data.sql`: Expected `relation "auth.refresh_tokens_id_seq" does not exist` because `auth` schema is excluded from `schema.sql`.
+* **Execution Safety Boundary:** Physical DDL execution (`migrations/20261112_001_personalization_engine.sql`) remains unexecuted against Supabase pending formal Stage B operator release.
 
