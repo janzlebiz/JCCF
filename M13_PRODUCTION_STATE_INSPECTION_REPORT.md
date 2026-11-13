@@ -2,8 +2,10 @@
 **Document ID:** `JCCF-M13-PROD-STATE-INSPECTION`
 **Document Version:** 1.1
 **Date:** November 13, 2026
-**Initial Inspection Timestamp (UTC):** `2026-11-13T02:57:37.803171+00:00`
-**Fresh Reconfirmation Timestamp (UTC):** `2026-11-13T03:27:17.355102+00:00`
+**Initial Inspection Timestamp (UTC):** `2026-11-13T02:57:37.803171+00:00` (`2026-11-13T10:57:37+08:00` PHT)
+**Fresh Reconfirmation Timestamp (UTC):** `2026-11-13T03:27:17.355102+00:00` (`2026-11-13T11:27:17+08:00` PHT)
+
+> **Timestamp & Clock Reconciliation Note:** The workstation local timezone is `UTC+08:00` (`Malay Peninsula Standard Time` / PHT). Commit `0a1b9c9f486f32c8404a6ca2b54e8d121fa2e9ee` occurred at `2026-11-13 11:14:45 +0800` (`03:14:45Z`), and the independent review occurred around `11:16 AM PHT` (`03:16Z`). The fresh read-only inspection (`2026-11-13T03:27:17.355102+00:00` = `11:27:17 AM PHT`) and `PF-01`..`PF-11` (`03:27:18Z`–`20Z`) were executed **11 minutes after** that review, followed by commit `591d9003ed1c2d3389ab2580275b003119661e33` at `11:29:17 +0800` (`03:29:17Z`). Original timestamps are preserved verbatim; there is zero clock skew.
 **Repository:** `https://github.com/janzlebiz/JCCF` (`main` @ `0a1b9c9f486f32c8404a6ca2b54e8d121fa2e9ee`)
 **Target Environment:** **JCCF Production Supabase Project** (`ammsjbcpbspisbyynaga`)
 **Authorization Status:** Read-Only Inspection Complete; Live Production DDL **NOT EXECUTED**
