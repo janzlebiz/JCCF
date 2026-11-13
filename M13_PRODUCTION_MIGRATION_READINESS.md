@@ -21,13 +21,13 @@ By explicit owner direction, Supabase project `ammsjbcpbspisbyynaga` (`JCCF`) is
 | **Phase D** | Production Backup & PG 17.11 Restore | **PASSED** | [M13_PRODUCTION_BACKUP_AND_RECOVERY_REPORT.md](M13_PRODUCTION_BACKUP_AND_RECOVERY_REPORT.md) (`prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC`, all 5 manifest checksums verified, restore RC=`0`) |
 | **Phase E** | Production Preflight (11/11) & Integration Suite (26/26) | **PASSED** | `11/11` live read-only preflight `PASS` (`2026-11-13T03:27:18Z–20Z`); `26/26` PG 17.11 `PASS`; `12/12` static `PASS` |
 | **Phase F** | Production Change Plan & Failure Tests | **COMPLETE** | [M13_PRODUCTION_CHANGE_PLAN.md](M13_PRODUCTION_CHANGE_PLAN.md) (Persistent `psql` `\i` mode, `TSV-01..03` + `MFE-01..02` + `TFT-01..08` `PASS`, schema-change freeze, `orders` FK precondition, 13-step sequence, `PMV-01`..`PMV-11`) |
-| **Phase G** | Production Execution Release Gate | **AWAITING RELEASE** | Pending explicit owner/operator production execution release |
-| **Phase H** | Production Migration Execution | **NOT EXECUTED** | Zero production DDL or rollback SQL executed |
+| **Phase G** | Production Execution Release Gate | **RELEASED** | Explicit owner authorization (`AUTHORIZE M13 PRODUCTION MIGRATION EXECUTION`) received |
+| **Phase H** | Production Migration Execution | **EXECUTED & VERIFIED** | [M13_PRODUCTION_EXECUTION_REPORT.md](M13_PRODUCTION_EXECUTION_REPORT.md) (`EXIT_CODE=0`, `COMMIT`, `PMV-01`..`PMV-11` `PASS`, rollback **NOT EXECUTED**) |
 
 ## 3. Explicit Authorization State
 
 * **D4 Stage A (Historical):** Preserved as `CONDITIONAL AUTHORIZATION GRANTED`.
-* **D4 Stage B / Production Change Gate:** `READY FOR EXPLICIT PRODUCTION EXECUTION RELEASE`.
+* **D4 Stage B / Production Migration:** `EXECUTED & VERIFIED` (`2026-11-13T05:18:05Z`, `ammsjbcpbspisbyynaga`).
 * **D5 Phase 1 Engineering:** `AUTHORIZED SEPARATELY` within approved scope.
-* **D5 Live Integration & Deployment:** `NOT AUTHORIZED` until production migration is executed and verified.
-* **Live Production DDL / Rollback:** `NOT EXECUTED`.
+* **D5 Live Integration & Deployment:** `NOT AUTHORIZED` (requires separate approval).
+* **Live Production Rollback SQL:** `NOT EXECUTED`.
