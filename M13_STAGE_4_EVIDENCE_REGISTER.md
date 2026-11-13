@@ -4,11 +4,12 @@
 **Document ID:** `JCCF-M13-STAGE-4-EVIDENCE-REG`  
 **Version:** 4.0 (Final Targeted Refinements Baseline — F6 & F7 Resolved)  
 **Date:** 13 November 2026 (2026-11-13T02:18:00+08:00)  
-**Status:** EVIDENCE REGISTER — PRE-IMPLEMENTATION GOVERNANCE  
+**Status:** D4 Stage A: CONDITIONAL AUTHORIZATION GRANTED; D4 Stage B: READY FOR OWNER/OPERATOR RELEASE REVIEW (Live DDL NOT EXECUTED); D5 Phase 1 Engineering: AUTHORIZED SEPARATELY (Live Supabase Integration & Deployment NOT AUTHORIZED)  
 **Repository:** `https://github.com/janzlebiz/JCCF`  
 **Governing Migration Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
 **Governing Rollback Commit SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
-**Verified CI Workflow SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
+**Verified CI & PG 17.11 Suite SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
+**Latest Evidence Commit SHA:** `54592863fc028858300f31d877d4b069a0461550`  
 
 ---
 
@@ -32,7 +33,7 @@
 | **EV-M13-14** | Backup and Disaster Recovery Readiness | `M13_BACKUP_RECOVERY_READINESS.md` | Current HEAD | Disaster Recovery Plan | Documents pre-execution backup requirements, RTO (<15m), RPO (0s), and restoration procedure. | Does NOT prove live staging backup capture. | **VERIFIED** |
 | **EV-M13-15** | Stage 4 Consistency Audit | `M13_FINAL_STAGE_4_AUDIT.md` | Current HEAD | Audit Manifest | Reconciles all 13 Stage 4 artifacts, commits, tests, and SHA-256 checksums. | Does NOT constitute staging execution authorization. | **VERIFIED** |
 | **EV-M13-16** | Pre-Execution Gap Register | `M13_PRE_EXECUTION_GAP_REGISTER.md` | Current HEAD | Risk & Gap Register | Consolidates all open/remediated items with D1 severity classifications; 0 open code defects. | Does NOT authorize Decision 4. | **VERIFIED** |
-| **EV-M13-17** | Staging Execution Acceptance Checklist | `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | Current HEAD | Operational Gate Checklist | Establishes future gate checks (E1–E6) for post-approval pre-execution operator safety. | Does NOT execute staging checks now. | **VERIFIED** |
+| **EV-M13-17** | Staging Execution Acceptance Checklist | `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | Current HEAD | Operational Gate Checklist | Reconciled v2.0 (PG 17.11 target, local backup & restore, 11 preflight checks, D4/D5 split). | Live DDL NOT executed. | **VERIFIED** |
 | **EV-M13-18** | Decision 4 Final Authorization Package | `M13_DECISION_4_FINAL_PACKAGE.md` | Current HEAD | Owner Decision Package | Consolidates 23 comprehensive sections recommending conditional approval for Decision 4 under two-stage model. | Decision 4 remains NOT AUTHORIZED until signed. | **VERIFIED** |
 | **EV-M13-19** | Decision 4 Owner Clarification Package | `M13_D4_OWNER_DECISION_CLARIFICATION.md` | Current HEAD | Clarification Package | Reconciles commit identity, permission matrix evidence, external FKs, PostgREST claims, and recovery constraints. | Decision 4 remains NOT AUTHORIZED until signed. | **VERIFIED** |
 | **EV-M13-20** | D4 Local Supabase Backup & Recoverability Report | `M13_D4_LOCAL_BACKUP_REPORT.md` | Current HEAD | Pre-Execution Report | Documents IPv4 Session Pooler backup (`staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC`), SHA-256 manifest, and PG 17.11 restore test. | Does NOT constitute live DDL execution. | **VERIFIED** |

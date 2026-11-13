@@ -1,9 +1,13 @@
 # JCCF Subsystem M13 — Staging Execution Acceptance Checklist
-**Document Version:** 1.0  
-**Status:** Future Staging Operational Gate (NOT TO BE EXECUTED PRIOR TO D4 AUTHORIZATION)  
-**Governing Migration Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
-**Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
-**Authorization Status:** Decision 4 (D4) and Decision 5 (D5) remain **NOT AUTHORIZED**.
+**Document Version:** 2.0  
+**Status:** Stage B Pre-Execution Operational Gate (LIVE DDL NOT YET EXECUTED)  
+**Governing Migration Commit:** `e624e95f74932441dfee90cad7a9cb4544f64d6d` (`migrations/20261112_001_personalization_engine.sql`)  
+**Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (`migrations/20261112_001_personalization_engine_rollback.sql`)  
+**Integration Test Baseline Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (`tests/test_migration_postgres_integration.py`, 26/26 PASS on PG 17.11)  
+**Authorization Status:**
+* **D4 Stage A:** **CONDITIONAL AUTHORIZATION GRANTED**.
+* **D4 Stage B:** **READY FOR OWNER/OPERATOR RELEASE REVIEW** (live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED).
+* **D5 Phase 1 Engineering:** **AUTHORIZED SEPARATELY** within approved scope (D5 live Supabase integration NOT AUTHORIZED until D4 migration is completed and verified; D5 deployment NOT AUTHORIZED).
 
 ---
 
@@ -24,24 +28,28 @@ This checklist is an authoritative operational gate designed to enforce the **Tw
 
 | Check ID | Verification Item | Target Standard | Verified (Y/N) | Evidence Reference / Output |
 |---|---|---|---|---|
-| **E1.1** | Project Identity | Supabase Staging Reference ID matches authorized project | [ ] | Staging Project Ref: `________________` |
-| **E1.2** | Environment Isolation | Verified NOT targeting production database or client URLs | [ ] | Confirmed Staging URL |
-| **E1.3** | Engine Version | PostgreSQL version is 15.x or 16.x (`SELECT version();`) | [ ] | PostgreSQL Version: `________________` |
-| **E1.4** | Required Roles | `anon`, `authenticated`, `service_role` exist in `pg_roles` | [ ] | Role Query Count: `3` |
-| **E1.5** | Operator Role | Migration operator executes as `postgres` or administrative role | [ ] | Current User: `postgres` |
-| **E1.6** | Schema Isolation | Target schema is strictly `public`; no cross-schema pollution | [ ] | Schema: `public` |
+| **E1.1** | Project Identity | Supabase Staging Reference ID matches authorized project | [x] | `ammsjbcpbspisbyynaga` (`JCCF`, `ap-northeast-2`) |
+| **E1.2** | Environment Isolation | Verified NOT targeting production database or client URLs | [x] | Confirmed fresh empty DB (`0` public tables) |
+| **E1.3** | Engine Version | Primary target: PostgreSQL `17.11` (PG 15 CI retained as secondary regression baseline) | [x] | `PostgreSQL 17.11 on aarch64-unknown-linux-gnu` |
+| **E1.4** | Required Roles | `anon`, `authenticated`, `service_role` exist in `pg_roles` | [x] | Role Query Count: `3` (PF-06) |
+| **E1.5** | Operator Role | Migration operator executes as `postgres` or administrative role | [x] | Current User: `postgres` |
+| **E1.6** | Schema Isolation | Target schema is strictly `public`; no cross-schema pollution | [x] | Schema: `public` |
 
 ---
 
 ## 3. E2: Pre-Execution Backup & Recovery Verification
 
+> [!NOTE]
+> **Temporary Pre-Revenue Recovery Mitigation:** Supabase Free plan does not provide managed PITR. The owner-approved temporary mitigation is a **local logical database backup** captured over IPv4 Session Pooler and verified via local PostgreSQL 17.11 restoration (`M13_D4_LOCAL_BACKUP_REPORT.md` v1.1).
+> **Backup Limitations:** This is a local logical database backup only. Supabase-managed internal schemas and platform configuration are excluded. The source project currently has 0 public application tables, 0 application data rows, and no Auth users, Storage buckets, or Storage objects were present at verification time. Vanilla PostgreSQL restoration cannot reproduce all Supabase-managed platform components (`supabase_vault`, `extensions.pgrst_*`/`grant_pg_*` event triggers). This is a temporary pre-revenue risk mitigation, not an enterprise disaster-recovery solution.
+
 | Check ID | Verification Item | Target Standard | Verified (Y/N) | Evidence Reference / Output |
 |---|---|---|---|---|
-| **E2.1** | Logical Schema Dump | `pg_dump --schema-only` executed and stored securely | [ ] | File: `staging_pre_m13_schema.sql` |
-| **E2.2** | Logical Data Dump | `pg_dump --data-only` executed for pre-existing tables | [ ] | File: `staging_pre_m13_data.dump` |
-| **E2.3** | PITR Point Captured | Exact UTC timestamp recorded for Point-in-Time Recovery | [ ] | UTC Timestamp: `____________________` |
-| **E2.4** | Backup Checksum | SHA-256 hash calculated and logged for backup archives | [ ] | Backup Hash: `______________________` |
-| **E2.5** | Recovery Owner | Designee identified with authority to trigger disaster restore | [ ] | Recovery Lead: `____________________` |
+| **E2.1** | Logical Roles & Schema Dump | `pg_dumpall --roles-only` and `pg_dump --schema-only` stored outside Git | [x] | `D:\JCCF_SECURE_BACKUPS\M13\staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC\` (`roles.sql` `6301`B, `schema.sql` `39515`B) |
+| **E2.2** | Logical Data Dump | `pg_dump --data-only` executed (`0` app rows; fresh DB) | [x] | `data.sql` (`4750`B, `2026-11-13T02:28:27Z`–`02:29:16Z`) |
+| **E2.3** | Local Restore Verification | Restored into disposable local PG 17.11 (`jccf_restore_verify`, destroyed after check) | [x] | `roles=0`, `schema=0`, `data=0`; roles, `public.rls_auto_enable`, `ensure_rls` verified |
+| **E2.4** | Backup Checksums | SHA-256 hashes calculated and revalidated in `checksums.sha256` | [x] | `roles.sql`: `A3C83C6A...`, `schema.sql`: `792F534C...`, `data.sql`: `3213414D...` |
+| **E2.5** | Recovery Owner | Designee identified with authority to trigger disaster restore | [x] | Project Owner / Migration Operator |
 
 ---
 
@@ -49,11 +57,11 @@ This checklist is an authoritative operational gate designed to enforce the **Tw
 
 | Check ID | Verification Item | Target Standard | Verified (Y/N) | Evidence Reference / Output |
 |---|---|---|---|---|
-| **E3.1** | Git Commit Baseline | Working repository checked out to commit `f9a4eb3` | [ ] | `git rev-parse HEAD` = `f9a4eb3` |
-| **E3.2** | Migration SQL Hash | SHA-256 matches `9D6579BC93842C57E3EA03C93F3802CF...` | [ ] | Hash Verified: [ ] |
-| **E3.3** | Rollback SQL Hash | SHA-256 matches `73725DF9716772A355EC159117F2DD68...` | [ ] | Hash Verified: [ ] |
-| **E3.4** | Working Tree State | Local working tree is clean with zero uncommitted changes | [ ] | `git status` clean |
-| **E3.5** | Runbook Version | Operator following `M13_STAGE_4_EXECUTION_AND_ROLLBACK_RUNBOOK.md` | [ ] | Version 4.0 confirmed |
+| **E3.1** | Git Commit Baseline | Migration at `e624e95`, Rollback & Tests at `f9a4eb3`, Docs at latest HEAD | [x] | Byte-for-byte identical (`git diff` empty) |
+| **E3.2** | Migration SQL Hash | SHA-256 matches `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E` | [x] | Hash Verified |
+| **E3.3** | Rollback SQL Hash | SHA-256 matches `73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4` | [x] | Hash Verified |
+| **E3.4** | Working Tree State | Local working tree is clean with zero uncommitted changes | [x] | `git status` clean |
+| **E3.5** | Runbook Version | Operator following `M13_STAGE_4_EXECUTION_AND_ROLLBACK_RUNBOOK.md` | [x] | Confirmed |
 
 ---
 

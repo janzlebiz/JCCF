@@ -63,35 +63,26 @@ Every check must be confirmed and documented immediately prior to executing DDL 
 
 ## 4. Operator Pre-Execution Release Protocol (Stage B Execution Sequence)
 
-Once Blocker 1 is resolved, the operator must execute this strict sequence:
+The operator must execute this strict 10-step sequence for Stage B release and execution:
 
-```
-[STAGE A CONDITIONAL AUTHORIZATION IN HAND]
-                    │
-                    ▼
- 1. EXTRACT LOCAL LOGICAL BACKUPS (Supabase CLI)
- ├── roles.sql, schema.sql, data.sql
- └── Compute SHA-256 manifest
-                    │
-                    ▼
- 2. VERIFY RECOVERABILITY IN LOCAL POSTGRESQL 17
- ├── Test restoration into disposable container (Port 5433)
- └── Confirm schema and role integrity
-                    │
-                    ▼
- 3. EXECUTE STAGING PREFLIGHT QUERIES (11 Gates)
- ├── Verify anon, authenticated, service_role
- └── Confirm zero conflicting tables, triggers, or functions
-                    │
-                    ▼
- 4. OPERATOR FORMAL RELEASE SIGN-OFF
- ├── All 14 Checklist items marked PASS
- └── Log execution timestamp in M13_STAGE_4_EVIDENCE_REGISTER.md
-                    │
-                    ▼
- 5. EXECUTE MIGRATION DDL IN STAGING
- └── Apply migrations/20261112_001_personalization_engine.sql
-```
+1. Final operator review of the governing migration (`e624e95f74932441dfee90cad7a9cb4544f64d6d`) and rollback (`f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`) artifacts.
+2. Confirm exact artifact hashes (`9D6579BC...` for migration SQL; `73725DF9...` for rollback SQL).
+3. Confirm target project identity (`ammsjbcpbspisbyynaga`, `JCCF`, `PostgreSQL 17.11`) and environment isolation.
+4. Confirm backup files still exist at the recorded secure local location (`D:\JCCF_SECURE_BACKUPS\M13\staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC`).
+5. Revalidate backup checksums against `checksums.sha256` (`roles.sql`, `schema.sql`, `data.sql`, `backup_metadata.json`).
+6. Confirm all 11 preflight checks (`PF-01`..`PF-11`) and their UTC timestamps (`2026-11-13T02:31:52Z–53Z`).
+7. Confirm clean repository state (`git status` clean) and correct execution checkout.
+8. Obtain explicit Stage B operator release.
+9. Only then execute the migration (`migrations/20261112_001_personalization_engine.sql`) during the approved staging window.
+10. Perform post-migration acceptance tests (`E6.1`–`E6.10`) and publish evidence.
+
+### 4.1 Local Logical Backup Limitations
+* The backup is a local logical database backup only.
+* Supabase-managed internal schemas and platform configuration are excluded.
+* The source project currently has zero public application tables and zero application data rows.
+* No Auth users, Storage buckets, or Storage objects were present at the time of verification, as established by the earlier project inspection.
+* Vanilla PostgreSQL restoration cannot reproduce all Supabase-managed platform components (`supabase_vault`, `extensions.pgrst_*` / `grant_pg_*` event triggers).
+* This is a temporary pre-revenue risk mitigation, not an enterprise disaster-recovery solution.
 
 ---
 
