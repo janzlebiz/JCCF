@@ -4,12 +4,13 @@
 **Document ID:** `JCCF-M13-STAGE-4-EVIDENCE-REG`  
 **Version:** 4.0 (Final Targeted Refinements Baseline — F6 & F7 Resolved)  
 **Date:** 13 November 2026 (2026-11-13T02:18:00+08:00)  
-**Status:** D4 Stage A: CONDITIONAL AUTHORIZATION GRANTED; D4 Stage B: READY FOR OWNER/OPERATOR RELEASE REVIEW (Live DDL NOT EXECUTED); D5 Phase 1 Engineering: AUTHORIZED SEPARATELY (Live Supabase Integration & Deployment NOT AUTHORIZED)  
+**Status:** D4 Stage A: CONDITIONAL AUTHORIZATION GRANTED; D4 Stage B: BLOCKED — STAGING ISOLATION EVIDENCE (E1.2 non-production confirmation required; Live DDL NOT EXECUTED); D5 Phase 1 Engineering: AUTHORIZED SEPARATELY (Live Supabase Integration & Deployment NOT AUTHORIZED)  
 **Repository:** `https://github.com/janzlebiz/JCCF`  
 **Governing Migration Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
 **Governing Rollback Commit SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **Verified CI & PG 17.11 Suite SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
-**Latest Evidence Commit SHA:** `54592863fc028858300f31d877d4b069a0461550`  
+**Preflight Package Commit SHA:** `fb40bf5c56802fbe85f0b6c80b25c88fc258ec27`  
+**Latest Evidence Commit SHA:** `71f2ed723fe02285899fd090257edc2284e2417e`  
 
 ---
 
@@ -19,7 +20,7 @@
 |---|---|---|---|---|---|---|---|
 | **EV-M13-01** | Migration SQL Script | `migrations/20261112_001_personalization_engine.sql` | `e624e95` (SHA-256: `9D6579BC...`) | Source Code | Defines declarative schema, fail-closed role preflight, RLS policies, trigger function, indexes, and 15 column checks. | Does NOT prove execution on Supabase staging. | **VERIFIED** |
 | **EV-M13-02** | Rollback SQL Script | `migrations/20261112_001_personalization_engine_rollback.sql` | `f9a4eb3` (SHA-256: `73725DF9...`) | Source Code | Restrictive drops (`DROP TABLE ... RESTRICT`, 0 `CASCADE`), trigger OID & function presence checks, normalized exact role-set equality (`array_agg(r ORDER BY r)`). | Does NOT prove rollback execution on live staging. | **VERIFIED** |
-| **EV-M13-03** | Staging Preflight Package | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `e624e95` (SHA-256: `CE0A8C10...`) | Documentation | Preflight verification queries, PostgREST role checks, and operator safety rules. | Does NOT constitute staging execution authorization. | **VERIFIED** |
+| **EV-M13-03** | Staging Preflight Package | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `fb40bf5` (SHA-256: `CE0A8C10...`) | Documentation | Preflight verification queries, PostgREST role checks, and operator safety rules (unchanged at subsequent commits). | Does NOT constitute staging execution authorization. | **VERIFIED** |
 | **EV-M13-04** | Static Scenario Suite | `tests/test_migration_scenarios.py` | `e624e95` | Automated Test Code (Local Python) | AST syntax parsing, SQL pattern matching across 12 migration/rollback scenarios. | Does NOT prove real PostgreSQL database behavior. | **VERIFIED** (12/12 PASS) |
 | **EV-M13-05** | Real PostgreSQL Integration Suite | `tests/test_migration_postgres_integration.py` | `f9a4eb3` | Automated Live Integration Suite (CI & Local PG 17.11) | 26 scenarios executed in genuine disposable databases (`CREATE DATABASE jccf_<id>_<uuid>`). Verifies DDL, RLS, triggers, preflight rejects, rollback, role fail-closed, trigger/policy clash, standalone/coupled FKs, policy role verification, trigger missing-function abort, complete 7-point permission matrix, 15-column rejection, extra role abort, and unexpected PUBLIC abort. | Does NOT prove Supabase staging execution. | **VERIFIED ON PG 15 CONTAINER & LOCAL PG 17.11** (26/26 PASS) |
 | **EV-M13-06** | CI Verification Workflow | `.github/workflows/postgres_verification.yml` | `f9a4eb3` | CI/CD Infrastructure | Automated pipeline executing PostgreSQL 15+ container service on GitHub Actions runner. | Does NOT connect to external Supabase projects. | **VERIFIED** |
@@ -38,5 +39,5 @@
 | **EV-M13-19** | Decision 4 Owner Clarification Package | `M13_D4_OWNER_DECISION_CLARIFICATION.md` | Current HEAD | Clarification Package | Reconciles commit identity, permission matrix evidence, external FKs, PostgREST claims, and recovery constraints. | Decision 4 remains NOT AUTHORIZED until signed. | **VERIFIED** |
 | **EV-M13-20** | D4 Local Supabase Backup & Recoverability Report | `M13_D4_LOCAL_BACKUP_REPORT.md` | Current HEAD | Pre-Execution Report | Documents IPv4 Session Pooler backup (`staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC`), SHA-256 manifest, and PG 17.11 restore test. | Does NOT constitute live DDL execution. | **VERIFIED** |
 | **EV-M13-21** | PostgreSQL 17 Compatibility & Integration Report | `M13_POSTGRESQL_17_COMPATIBILITY_REPORT.md` | Current HEAD | Compatibility Report | Certifies 100% compatibility across PostgreSQL 17.11 (26/26 local + live target `17.11.0.019`), roles, RLS, functions, and dual CI matrix. | Does NOT prove live DDL execution. | **VERIFIED** |
-| **EV-M13-22** | Decision 4 Stage B Pre-Execution Readiness Report | `M13_D4_STAGE_B_READINESS.md` | Current HEAD | Operational Readiness Gate | Records all Stage B gates (E1–E5) PASSED; recommends Stage B owner/operator release review; D5 Phase 1 engineering authorized separately. | Live DDL execution NOT performed. | **VERIFIED** |
+| **EV-M13-22** | Decision 4 Stage B Pre-Execution Readiness Report | `M13_D4_STAGE_B_READINESS.md` | Current HEAD | Operational Readiness Gate | Records technical gates PASS and E1.2 staging/production isolation NOT VERIFIED; D5 Phase 1 engineering authorized separately. | Live DDL execution NOT performed. | **VERIFIED** |
 | **EV-M13-23** | Live Staging Preflight Query Execution (PF-01..PF-11) | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `2026-11-13T02:31:52Z` | Read-Only Telemetry | All 11 preflight queries executed on `ammsjbcpbspisbyynaga` (`PostgreSQL 17.11`): roles present, 0 table/col/FK/func/trigger/policy collisions. | Zero DDL executed. | **VERIFIED** (11/11 PASS) |

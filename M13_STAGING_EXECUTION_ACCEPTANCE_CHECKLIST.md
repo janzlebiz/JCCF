@@ -6,7 +6,7 @@
 **Integration Test Baseline Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (`tests/test_migration_postgres_integration.py`, 26/26 PASS on PG 17.11)  
 **Authorization Status:**
 * **D4 Stage A:** **CONDITIONAL AUTHORIZATION GRANTED**.
-* **D4 Stage B:** **READY FOR OWNER/OPERATOR RELEASE REVIEW** (live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED).
+* **D4 Stage B:** **BLOCKED — STAGING ISOLATION EVIDENCE** (`E1.2` requires explicit owner/operator confirmation that `ammsjbcpbspisbyynaga` is designated non-production/staging; live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED).
 * **D5 Phase 1 Engineering:** **AUTHORIZED SEPARATELY** within approved scope (D5 live Supabase integration NOT AUTHORIZED until D4 migration is completed and verified; D5 deployment NOT AUTHORIZED).
 
 ---
@@ -29,7 +29,7 @@ This checklist is an authoritative operational gate designed to enforce the **Tw
 | Check ID | Verification Item | Target Standard | Verified (Y/N) | Evidence Reference / Output |
 |---|---|---|---|---|
 | **E1.1** | Project Identity | Supabase Staging Reference ID matches authorized project | [x] | `ammsjbcpbspisbyynaga` (`JCCF`, `ap-northeast-2`) |
-| **E1.2** | Environment Isolation | Verified NOT targeting production database or client URLs | [x] | Confirmed fresh empty DB (`0` public tables) |
+| **E1.2** | Environment Isolation | Verified NOT targeting production database or client URLs | [ ] **NOT VERIFIED** | `npx supabase projects list` shows `ammsjbcpbspisbyynaga` (`JCCF`, `ap-northeast-2`, created `2026-11-12T15:41:53Z`) is the sole JCCF project in org `fpyqttksvcgqjuuipfei` (other project `jgpigkeekfuawbyilycq` is `Agila-Hub-BEEC`). No `.env*` or deployed app config exists in repo. **Operator must explicitly confirm non-production/staging designation before release.** |
 | **E1.3** | Engine Version | Primary target: PostgreSQL `17.11` (PG 15 CI retained as secondary regression baseline) | [x] | `PostgreSQL 17.11 on aarch64-unknown-linux-gnu` |
 | **E1.4** | Required Roles | `anon`, `authenticated`, `service_role` exist in `pg_roles` | [x] | Role Query Count: `3` (PF-06) |
 | **E1.5** | Operator Role | Migration operator executes as `postgres` or administrative role | [x] | Current User: `postgres` |
@@ -57,7 +57,7 @@ This checklist is an authoritative operational gate designed to enforce the **Tw
 
 | Check ID | Verification Item | Target Standard | Verified (Y/N) | Evidence Reference / Output |
 |---|---|---|---|---|
-| **E3.1** | Git Commit Baseline | Migration at `e624e95`, Rollback & Tests at `f9a4eb3`, Docs at latest HEAD | [x] | Byte-for-byte identical (`git diff` empty) |
+| **E3.1** | Git Commit Baseline | Migration governing commit `e624e95` (blob `679f5a80`, identical at `f9a4eb3` & HEAD); Rollback & Integration suite governing commit `f9a4eb3` (blobs `e7b1c60f` & `8edb6730`, identical at HEAD); Preflight package `fb40bf5` | [ ] **VERIFY AT EXECUTION** | Operator must verify exact checkout commit, branch `main`, and hashes immediately before execution |
 | **E3.2** | Migration SQL Hash | SHA-256 matches `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E` | [x] | Hash Verified |
 | **E3.3** | Rollback SQL Hash | SHA-256 matches `73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4` | [x] | Hash Verified |
 | **E3.4** | Working Tree State | Local working tree is clean with zero uncommitted changes | [x] | `git status` clean |

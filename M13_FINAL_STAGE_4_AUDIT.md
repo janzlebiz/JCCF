@@ -5,7 +5,7 @@
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **CI-Tested Baseline Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (Workflow Run `43277854888` & Local PG 17.11 26/26 PASS)  
 **Latest Evidence Commit:** `54592863fc028858300f31d877d4b069a0461550`  
-**Authorization Status:** D4 Stage A: **CONDITIONAL AUTHORIZATION GRANTED**; D4 Stage B: **READY FOR OWNER/OPERATOR RELEASE REVIEW** (live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED); D5 Phase 1 Engineering: **AUTHORIZED SEPARATELY** within approved scope (D5 live Supabase integration NOT AUTHORIZED until D4 migration is completed and verified; D5 deployment NOT AUTHORIZED).
+**Authorization Status:** D4 Stage A: **CONDITIONAL AUTHORIZATION GRANTED**; D4 Stage B: **BLOCKED — STAGING ISOLATION EVIDENCE** (`E1.2` non-production confirmation required; live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED); D5 Phase 1 Engineering: **AUTHORIZED SEPARATELY** within approved scope (D5 live Supabase integration NOT AUTHORIZED until D4 migration is completed and verified; D5 deployment NOT AUTHORIZED).
 
 ---
 
@@ -23,7 +23,7 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 |---|---|---|---|
 | **Migration DDL** | `migrations/20261112_001_personalization_engine.sql` | `e624e95f74932441dfee90cad7a9cb4544f64d6d` | Idempotent PostgreSQL 15/17 DDL for M13 (byte-identical at `f9a4eb3` & HEAD) |
 | **Rollback DDL** | `migrations/20261112_001_personalization_engine_rollback.sql` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | Safe reverse DDL with F6 exact role checks |
-| **Preflight Package** | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `759bac06ce35270c0f650e2a78ac34a0ba3ca83c` | Pre-execution diagnostic queries (15 cols) |
+| **Preflight Package** | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `fb40bf5c56802fbe85f0b6c80b25c88fc258ec27` | Pre-execution diagnostic queries (unchanged at subsequent commits; 11 queries run `2026-11-13T02:31:52Z`) |
 | **Scope Inventory** | `M13_STAGE_4_MIGRATION_SCOPE_INVENTORY.md` | `759bac06ce35270c0f650e2a78ac34a0ba3ca83c` | Schema catalog of tables, columns, indexes |
 | **Supabase Matrix** | `M13_STAGE_4_SUPABASE_COMPATIBILITY_MATRIX.md` | `759bac06ce35270c0f650e2a78ac34a0ba3ca83c` | Initial 7-point compatibility matrix |
 | **Supabase Review** | `M13_SUPABASE_COMPATIBILITY_REVIEW.md` | Current HEAD | Exhaustive Workstream A platform review |
@@ -55,9 +55,11 @@ This document performs an exhaustive cross-reference and integrity audit of the 
    * `order_customizations` contains exactly **15 columns**, including `revocation_reason VARCHAR(100) NULL`.
    * Reconciled across `20261112_001_personalization_engine.sql` (Section 2), `JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` (Query 4), `M13_STAGE_4_MIGRATION_SCOPE_INVENTORY.md` (Table 3), and `test_migration_postgres_integration.py` (PG-INT-01).
 3. **Commit Hierarchy Alignment:**
-   * Migration DDL and Rollback DDL were committed in `f9a4eb3` and tested in GitHub Actions Run `43277854888`.
-   * All subsequent documentation commits (`8420dee`, `759bac0`) strictly document and verify this exact baseline without altering executable SQL code.
-   * Zero orphan or stale DDL scripts exist.
+   * **Governing Migration DDL (`e624e95f74932441dfee90cad7a9cb4544f64d6d`):** Blob `679f5a8086fb1070e39b7f0cef4b5b381999ce78` (byte-identical at `f9a4eb3` and current HEAD).
+   * **Governing Rollback DDL (`f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`):** Blob `e7b1c60ef9ab5ddb96d3512262db6a700e2fc9bf` (byte-identical at current HEAD).
+   * **Integration Test Baseline (`f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`):** Blob `8edb673023cbcd484b43372a529183e2522a52fe` (tested in GitHub Actions Run `43277854888` on PG 15 & locally on PG 17.11, 26/26 PASS).
+   * **Preflight Package (`fb40bf5c56802fbe85f0b6c80b25c88fc258ec27`):** Unchanged at subsequent commits; 11 read-only queries executed on `ammsjbcpbspisbyynaga` (`2026-11-13T02:31:52Z–53Z`).
+   * **Documentation & Evidence Commits (`759bac0`, `5459286`, `71f2ed7`):** Strictly document and verify these artifacts without altering executable SQL code. Zero orphan or stale DDL scripts exist.
 
 ---
 
@@ -65,22 +67,22 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 
 | Artifact File Path | SHA-256 Checksum | Commit | Governing Status | Checksum Status vs Previous Baseline |
 |---|---|---|---|---|
-| `migrations/20261112_001_personalization_engine.sql` | `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
+| `migrations/20261112_001_personalization_engine.sql` | `9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E` | `e624e95` | **Governing** | Unchanged (Stable; identical at `f9a4eb3` & HEAD) |
 | `migrations/20261112_001_personalization_engine_rollback.sql` | `73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
-| `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `CE0A8C1072A49DD328D555CB31E93C9E9DD88538BA08D6696E6F828CF00C6225` | `759bac0` | **Governing** | Unchanged (Stable) |
+| `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `CE0A8C1072A49DD328D555CB31E93C9E9DD88538BA08D6696E6F828CF00C6225` | `fb40bf5` | **Governing** | Unchanged (Stable at `fb40bf5`..HEAD) |
 | `M13_STAGE_4_MIGRATION_SCOPE_INVENTORY.md` | `A1F5128897700F5EE26DE89B0D183F3C32189970C735503E1E151C1B67C6EEF8` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_STAGE_4_SUPABASE_COMPATIBILITY_MATRIX.md` | `66A3767710EA78A4E2DA8AD9516EF72C242782070E5609149DEDFC0F3AD2AE77` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_STAGE_4_EXECUTION_AND_ROLLBACK_RUNBOOK.md` | `71B01C0310962920FA829CFDD2FD4AB2D9D905E9ECF6D562A6CF0C28F7B58945` | `759bac0` | **Governing** | Unchanged (Stable) |
-| `M13_STAGE_4_EVIDENCE_REGISTER.md` | `D83397A2BC835DB26CAB522B034C602B34B02CEB3523C95130A09B72752A51D1` | Current HEAD | Reference | Reconciled (EV-M13-17, EV-M13-20..23, PG 17.11 & D5) |
+| `M13_STAGE_4_EVIDENCE_REGISTER.md` | `2238D2AAAFFE909B1E42E6C8FC2F0C2C5B31AD969B6D516EC6D31E366496391F` | Current HEAD | Reference | Reconciled (EV-M13-03, EV-M13-17, EV-M13-22, E1.2) |
 | `M13_STAGE_4_OWNER_AUTHORIZATION_PACKAGE.md` | `C0AB3F9AE826C9F3D1802500B2C729495251AF430B6CD269DCB18AFBD0F91570` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_SUPABASE_COMPATIBILITY_REVIEW.md` | `57872C870672A5E15700C5EB71F329B19162601C09BFC1A67AFB3F959007EABC` | Current HEAD | **Governing** | Reconciled (v1.1) |
 | `M13_BACKUP_RECOVERY_READINESS.md` | `41A6292CB1898111295A8E0599996DC4AFFBFFEA66ED075B2A73E0DD2EC4F6DC` | Current HEAD | **Governing** | Reconciled (v1.1) |
 | `M13_PRE_EXECUTION_GAP_REGISTER.md` | `2A7F24392BED0EA44BCE59F1C9DE91BCF445FFE6C4937CAEEAFCEE5964878521` | Current HEAD | **Governing** | Reconciled (v1.1) |
-| `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | `EDDB82756666C3352708486637A797A3B312BBFAAFF392B8C36E9221C804AA52` | Current HEAD | **Governing** | Reconciled (v2.0 PG 17.11 & Backup) |
+| `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | `52847933E8A2C9C1558AD595F4462BAD1DED60B7281714EE179F87D30D62735A` | Current HEAD | **Governing** | Reconciled (E1.2 NOT VERIFIED, E3.1 Exact Checkout) |
 | `M13_D4_OWNER_DECISION_CLARIFICATION.md` | `3A4017F09EC24698821C1B8D408121634A3ECACAEDDAF286929D5697FD735717` | Current HEAD | **Governing** | Newly Added (TC-01..06) |
 | `M13_D4_LOCAL_BACKUP_REPORT.md` | `07D291DBFB831E896D3A5F8DF6592ED98F2CF10E280E7A59CBAE52072CA575D3` | Current HEAD | **Governing** | Reconciled (v1.1 Backup & PG 17.11 Restore) |
-| `M13_POSTGRESQL_17_COMPATIBILITY_REPORT.md` | `17AA5A9499849E492064F57E6490EAD4212C57D3B1E445D5DD1B95C197345CB1` | Current HEAD | **Governing** | Reconciled (PG 17.11 Local & Live Target) |
-| `M13_D4_STAGE_B_READINESS.md` | `63CCD59C30187F327D24D87F667E1FEE2A4D622AC8472D22FF85B05C1078C345` | Current HEAD | **Governing** | Reconciled (10-Step Sequence & Limits) |
+| `M13_POSTGRESQL_17_COMPATIBILITY_REPORT.md` | `19851B0B16E18C6C15168F659417732DC05C21766BD09EE41F2C73E84B8D3286` | Current HEAD | **Governing** | Reconciled (Migration `e624e95` / Rollback `f9a4eb3`) |
+| `M13_D4_STAGE_B_READINESS.md` | `136F1D885BC299C9C5D85664D9DE9240A805EF2EC61F90775546DE2B92112DA9` | Current HEAD | **Governing** | Reconciled (E1.2 Isolation Blocker & Execution Checkout) |
 | `tests/test_migration_postgres_integration.py` | `0A44F87AB76F571E568FB24BED65BB79C088F0FE743A65B3F2CF04905A77D018` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
 | `tests/test_migration_scenarios.py` | `56CA02D05D26BEF19573C05873081C621C7693C897E645B1FF788D334B72BA49` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
 | `.github/workflows/postgres_verification.yml` | `7D0849D5DD255F19BB1F6C4B59488F4F27D83E60B2601B22BAC9435992A25A5D` | Current HEAD | **Governing** | Updated (Dual PG 15 & PG 17 Matrix) |

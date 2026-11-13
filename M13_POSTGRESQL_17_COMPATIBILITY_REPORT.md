@@ -3,7 +3,7 @@
 **Document Version:** 1.0  
 **Date:** November 13, 2026  
 **Repository:** `https://github.com/janzlebiz/JCCF`  
-**Governing Migration Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
+**Governing Migration Commit:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **Target PostgreSQL Version:** PostgreSQL 17 (Target: 17.11; Latest available community release: 17.12)  
 **Supabase Target Project Engine:** PostgreSQL 17.11.0.003 (GA release channel)  
