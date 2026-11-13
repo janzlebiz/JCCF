@@ -5,6 +5,9 @@
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **Authorization Status:** Decision 4 (D4) and Decision 5 (D5) remain **NOT AUTHORIZED**.
 
+> [!IMPORTANT]
+> **Superseding Production Transition Notice (2026-11-13):** By explicit owner direction, `ammsjbcpbspisbyynaga` (`JCCF`) is the **production project** (no separate staging project exists). Free-tier Supabase has no PITR. Current production backup & PG 17.11 restore evidence is governed by [M13_PRODUCTION_BACKUP_AND_RECOVERY_REPORT.md](file:///d:/Antigravity/JCCF/M13_PRODUCTION_BACKUP_AND_RECOVERY_REPORT.md) and [M13_PRODUCTION_MIGRATION_READINESS.md](file:///d:/Antigravity/JCCF/M13_PRODUCTION_MIGRATION_READINESS.md). Historical staging assessment preserved below.
+
 ---
 
 ## 1. Executive Summary

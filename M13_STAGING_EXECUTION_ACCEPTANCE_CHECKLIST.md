@@ -5,8 +5,8 @@
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (`migrations/20261112_001_personalization_engine_rollback.sql`)  
 **Integration Test Baseline Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (`tests/test_migration_postgres_integration.py`, 26/26 PASS on PG 17.11)  
 **Authorization Status:**
-* **D4 Stage A:** **CONDITIONAL AUTHORIZATION GRANTED**.
-* **D4 Stage B:** **BLOCKED — STAGING ISOLATION EVIDENCE** (`E1.2` requires explicit owner/operator confirmation that `ammsjbcpbspisbyynaga` is designated non-production/staging; live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED).
+* **D4 Stage A:** **CONDITIONAL AUTHORIZATION GRANTED** (historical record preserved).
+* **D4 Stage B / Production Transition:** **SUPERSEDED BY PRODUCTION MIGRATION READINESS** (`ammsjbcpbspisbyynaga` confirmed as JCCF Production Supabase Project by owner; staging/production separation `E1.2` no longer applies; governed by `M13_PRODUCTION_MIGRATION_READINESS.md` & `M13_PRODUCTION_CHANGE_PLAN.md`; live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED).
 * **D5 Phase 1 Engineering:** **AUTHORIZED SEPARATELY** within approved scope (D5 live Supabase integration NOT AUTHORIZED until D4 migration is completed and verified; D5 deployment NOT AUTHORIZED).
 
 ---

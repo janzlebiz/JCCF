@@ -4,13 +4,13 @@
 **Document ID:** `JCCF-M13-STAGE-4-EVIDENCE-REG`  
 **Version:** 4.0 (Final Targeted Refinements Baseline — F6 & F7 Resolved)  
 **Date:** 13 November 2026 (2026-11-13T02:18:00+08:00)  
-**Status:** D4 Stage A: CONDITIONAL AUTHORIZATION GRANTED; D4 Stage B: BLOCKED — STAGING ISOLATION EVIDENCE (E1.2 non-production confirmation required; Live DDL NOT EXECUTED); D5 Phase 1 Engineering: AUTHORIZED SEPARATELY (Live Supabase Integration & Deployment NOT AUTHORIZED)  
-**Repository:** `https://github.com/janzlebiz/JCCF`  
-**Governing Migration Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
-**Governing Rollback Commit SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
-**Verified CI & PG 17.11 Suite SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
-**Preflight Package Commit SHA:** `fb40bf5c56802fbe85f0b6c80b25c88fc258ec27`  
-**Latest Evidence Commit SHA:** `71f2ed723fe02285899fd090257edc2284e2417e`  
+**Status:** D4 Stage A: CONDITIONAL AUTHORIZATION GRANTED (historical); Production Change Gate: READY FOR EXPLICIT PRODUCTION EXECUTION RELEASE (`ammsjbcpbspisbyynaga` confirmed as JCCF Production Project; Live DDL NOT EXECUTED); D5 Phase 1 Engineering: AUTHORIZED SEPARATELY (Live Integration & Deployment NOT AUTHORIZED until production migration verified)
+**Repository:** `https://github.com/janzlebiz/JCCF`
+**Governing Migration Commit SHA:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`
+**Governing Rollback Commit SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`
+**Verified CI & PG 17.11 Suite SHA:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`
+**Preflight Package Commit SHA:** `fb40bf5c56802fbe85f0b6c80b25c88fc258ec27`
+**Latest Evidence Commit SHA:** `0ecabfbc91ed97799952af1c2675d3f745c20aff`  
 
 ---
 
@@ -40,4 +40,8 @@
 | **EV-M13-20** | D4 Local Supabase Backup & Recoverability Report | `M13_D4_LOCAL_BACKUP_REPORT.md` | Current HEAD | Pre-Execution Report | Documents IPv4 Session Pooler backup (`staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC`), SHA-256 manifest, and PG 17.11 restore test. | Does NOT constitute live DDL execution. | **VERIFIED** |
 | **EV-M13-21** | PostgreSQL 17 Compatibility & Integration Report | `M13_POSTGRESQL_17_COMPATIBILITY_REPORT.md` | Current HEAD | Compatibility Report | Certifies 100% compatibility across PostgreSQL 17.11 (26/26 local + live target `17.11.0.019`), roles, RLS, functions, and dual CI matrix. | Does NOT prove live DDL execution. | **VERIFIED** |
 | **EV-M13-22** | Decision 4 Stage B Pre-Execution Readiness Report | `M13_D4_STAGE_B_READINESS.md` | Current HEAD | Operational Readiness Gate | Records technical gates PASS and E1.2 staging/production isolation NOT VERIFIED; D5 Phase 1 engineering authorized separately. | Live DDL execution NOT performed. | **VERIFIED** |
-| **EV-M13-23** | Live Staging Preflight Query Execution (PF-01..PF-11) | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `2026-11-13T02:31:52Z` | Read-Only Telemetry | All 11 preflight queries executed on `ammsjbcpbspisbyynaga` (`PostgreSQL 17.11`): roles present, 0 table/col/FK/func/trigger/policy collisions. | Zero DDL executed. | **VERIFIED** (11/11 PASS) |
+| **EV-M13-23** | Historical Pre-Transition Preflight (PF-01..PF-11) | `migrations/JCCF_M13_STAGING_MIGRATION_PREFLIGHT_PACKAGE.md` | `2026-11-13T02:31:52Z` | Read-Only Telemetry | Historical pre-transition preflight on `ammsjbcpbspisbyynaga` (`PostgreSQL 17.11`): 11/11 PASS. | Superseded by EV-M13-26; zero DDL executed. | **VERIFIED** (11/11 PASS) |
+| **EV-M13-24** | Production State Inspection (Read-Only) | `M13_PRODUCTION_STATE_INSPECTION_REPORT.md` | `2026-11-13T02:57:37Z` | Read-Only Telemetry | Verifies `ammsjbcpbspisbyynaga` (`JCCF`, `ap-northeast-2`, PG `17.11.0.019`): `0` public tables, `0` Auth users, `0` Storage objects, `0` conflicts. | Zero DDL executed. | **VERIFIED** |
+| **EV-M13-25** | Fresh Production Backup & PG 17.11 Restore | `M13_PRODUCTION_BACKUP_AND_RECOVERY_REPORT.md` | `2026-11-13T03:03:12Z` | Backup & Restore Test | Fresh logical backup (`prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC`, `roles=0`, `schema=0`, `data=0`) + disposable PG 17.11 restore PASS. | Not a full Supabase platform backup (Free plan has no PITR). | **VERIFIED** |
+| **EV-M13-26** | Live Production Preflight & 26-Test PG 17.11 Run | `M13_PRODUCTION_MIGRATION_READINESS.md` | `2026-11-13T02:57:40Z` | Read-Only & Disposable PG 17.11 | `11/11` live read-only preflight `PASS` + `26/26` PG 17.11 integration tests `PASS` + `12/12` static tests `PASS`. | Live DDL NOT executed. | **VERIFIED** |
+| **EV-M13-27** | Production Change Plan & Readiness Package | `M13_PRODUCTION_CHANGE_PLAN.md` | Current HEAD | Change Control | 14-point production change plan, rollback review (`RESTRICT` only), and release gate (`AUTHORIZE M13 PRODUCTION MIGRATION EXECUTION`). | Execution NOT yet authorized. | **VERIFIED** |

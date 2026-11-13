@@ -11,6 +11,9 @@
 **Current Repository HEAD:** `2b6027be220531dfb9ea46fb122fa02ecdd99587`  
 **Authoritative Governance Status:** Decision 4 (D4) and Decision 5 (D5) remain **NOT AUTHORIZED**.
 
+> [!IMPORTANT]
+> **Superseding Production Transition Notice (2026-11-13):** Historical D4 Stage A conditional authorization is preserved. By explicit owner direction, `ammsjbcpbspisbyynaga` (`JCCF`) is the **production project** (no separate staging project exists). D5 Phase 1 engineering is separately authorized within scope. Production migration execution is governed by [M13_PRODUCTION_MIGRATION_READINESS.md](file:///d:/Antigravity/JCCF/M13_PRODUCTION_MIGRATION_READINESS.md) and awaits `AUTHORIZE M13 PRODUCTION MIGRATION EXECUTION`.
+
 ---
 
 ### Section 1: Executive Summary

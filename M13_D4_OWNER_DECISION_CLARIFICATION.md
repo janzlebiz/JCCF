@@ -10,6 +10,9 @@
 **Current Repository HEAD:** `2b6027be220531dfb9ea46fb122fa02ecdd99587`  
 **Authoritative Governance Status:** Decision 4 (D4) and Decision 5 (D5) remain **NOT AUTHORIZED**.
 
+> [!IMPORTANT]
+> **Superseding Production Transition Notice (2026-11-13):** Historical Stage 4 clarification preserved below. By explicit owner direction, `ammsjbcpbspisbyynaga` (`JCCF`) is the **production project**. Governing migration commit is `e624e95` (identical at `f9a4eb3`), rollback & integration baseline is `f9a4eb3`, and preflight package is `fb40bf5`. Production readiness is governed by [M13_PRODUCTION_MIGRATION_READINESS.md](file:///d:/Antigravity/JCCF/M13_PRODUCTION_MIGRATION_READINESS.md).
+
 ---
 
 ## 1. Purpose

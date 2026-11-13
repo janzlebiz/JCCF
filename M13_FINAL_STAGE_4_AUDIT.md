@@ -4,8 +4,8 @@
 **Governing Migration Commit:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **CI-Tested Baseline Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` (Workflow Run `43277854888` & Local PG 17.11 26/26 PASS)  
-**Latest Evidence Commit:** `54592863fc028858300f31d877d4b069a0461550`  
-**Authorization Status:** D4 Stage A: **CONDITIONAL AUTHORIZATION GRANTED**; D4 Stage B: **BLOCKED — STAGING ISOLATION EVIDENCE** (`E1.2` non-production confirmation required; live D4 migration DDL NOT YET EXECUTED; live D4 rollback SQL NOT EXECUTED); D5 Phase 1 Engineering: **AUTHORIZED SEPARATELY** within approved scope (D5 live Supabase integration NOT AUTHORIZED until D4 migration is completed and verified; D5 deployment NOT AUTHORIZED).
+**Latest Evidence Commit:** `0ecabfbc91ed97799952af1c2675d3f745c20aff`  
+**Authorization Status:** D4 Stage A: **CONDITIONAL AUTHORIZATION GRANTED** (historical); Production Change Gate: **READY FOR EXPLICIT PRODUCTION EXECUTION RELEASE** (`ammsjbcpbspisbyynaga` confirmed as JCCF Production Project; live DDL NOT YET EXECUTED; live rollback SQL NOT EXECUTED); D5 Phase 1 Engineering: **AUTHORIZED SEPARATELY** within approved scope (D5 live integration & deployment NOT AUTHORIZED until production migration is completed and verified).
 
 ---
 

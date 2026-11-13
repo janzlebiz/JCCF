@@ -5,6 +5,9 @@
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **Authorization Status:** Decision 4 (D4) and Decision 5 (D5) remain **NOT AUTHORIZED**.
 
+> [!IMPORTANT]
+> **Superseding Production Transition Notice (2026-11-13):** By explicit owner direction, `ammsjbcpbspisbyynaga` (`JCCF`) is the **production project**. Current production readiness & change control are governed by [M13_PRODUCTION_MIGRATION_READINESS.md](file:///d:/Antigravity/JCCF/M13_PRODUCTION_MIGRATION_READINESS.md) and [M13_PRODUCTION_CHANGE_PLAN.md](file:///d:/Antigravity/JCCF/M13_PRODUCTION_CHANGE_PLAN.md). Historical Stage 4 register preserved below.
+
 ---
 
 ## 1. Severity Classification Framework

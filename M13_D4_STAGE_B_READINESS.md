@@ -9,8 +9,8 @@
 **Governing Migration Commit:** `e624e95f74932441dfee90cad7a9cb4544f64d6d`  
 **Governing Rollback Commit:** `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4`  
 **Authoritative Governance Status:**
-* **Stage A (Owner Decision):** **CONDITIONAL AUTHORIZATION GRANTED** (Option 1 selected by Owner).
-* **Stage B (Operator Pre-Execution Release):** **BLOCKED — STAGING ISOLATION EVIDENCE** (`E1.2` requires explicit owner/operator confirmation that `ammsjbcpbspisbyynaga` is designated non-production/staging; live DDL execution NOT yet performed).
+* **Stage A (Owner Decision):** **CONDITIONAL AUTHORIZATION GRANTED** (historical record preserved).
+* **Stage B / Production Change Gate:** **SUPERSEDED BY PRODUCTION MIGRATION READINESS** (`ammsjbcpbspisbyynaga` confirmed as JCCF Production Supabase Project by owner; see `M13_PRODUCTION_MIGRATION_READINESS.md` and `M13_PRODUCTION_CHANGE_PLAN.md`; live DDL execution NOT yet performed).
 * **Decision 5 (Phase 1 Application Engineering):** **AUTHORIZED SEPARATELY** within approved Phase 1 scope (live Supabase integration remains NOT AUTHORIZED pending D4; deployment NOT AUTHORIZED).
 
 ---
