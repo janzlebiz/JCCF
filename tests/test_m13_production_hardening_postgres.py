@@ -90,7 +90,7 @@ def run_tests():
     cur = conn.cursor()
 
     # Capture pre-hardening baseline for D6
-    cur.execute("SELECT proconfig, proacl::text FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='m13_set_updated_at';")
+    cur.execute("SELECT proconfig, ARRAY(SELECT a::text FROM unnest(proacl) AS a ORDER BY 1) FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='m13_set_updated_at';")
     pre_proconfig, pre_proacl = cur.fetchone()
 
     # Apply corrective migration (Run 1)
@@ -123,6 +123,8 @@ def run_tests():
     )
 
     # D2: Trigger regression tests across all 3 tables (rolled back)
+    # Uses updated_at = now() - 1h on insert (since now() is transaction_timestamp())
+    # and SET LOCAL ROLE service_role for UPDATE (proving trigger works without direct EXECUTE).
     conn.autocommit = False
     tid = str(uuid.uuid4())
     pid = str(uuid.uuid4())
@@ -133,34 +135,37 @@ def run_tests():
     tok2 = hashlib.sha256(b"d2_o").hexdigest()
 
     cur.execute(
-        "INSERT INTO public.personalization_templates (id, product_id, version, schema_definition, layout_template_path, is_active) VALUES (%s, %s, 'v1', '{}'::jsonb, '/tmp/t', true) RETURNING updated_at;",
+        "INSERT INTO public.personalization_templates (id, product_id, version, schema_definition, layout_template_path, is_active, updated_at) VALUES (%s, %s, 'v1', '{}'::jsonb, '/tmp/t', true, now() - INTERVAL '1 hour') RETURNING updated_at;",
         (tid, pid),
     )
     t1_before = cur.fetchone()[0]
-    time.sleep(0.05)
+    cur.execute("SET LOCAL ROLE service_role;")
     cur.execute("UPDATE public.personalization_templates SET is_active = false WHERE id = %s RETURNING updated_at, version;", (tid,))
     t1_after, t1_ver = cur.fetchone()
-    record("D2-TRG-TPL", t1_after > t1_before and t1_ver == "v1", f"updated_at {t1_before} -> {t1_after}")
+    cur.execute("RESET ROLE;")
+    record("D2-TRG-TPL", t1_after > t1_before and t1_ver == "v1", f"updated_at {t1_before} -> {t1_after} (service_role)")
 
     cur.execute(
-        "INSERT INTO public.customization_sessions (id, template_id, token_hash) VALUES (%s, %s, %s) RETURNING updated_at;",
+        "INSERT INTO public.customization_sessions (id, template_id, token_hash, updated_at) VALUES (%s, %s, %s, now() - INTERVAL '1 hour') RETURNING updated_at;",
         (sid, tid, tok1),
     )
     s_before = cur.fetchone()[0]
-    time.sleep(0.05)
+    cur.execute("SET LOCAL ROLE service_role;")
     cur.execute("UPDATE public.customization_sessions SET current_step = 'photo' WHERE id = %s RETURNING updated_at, token_hash;", (sid,))
     s_after, s_tok = cur.fetchone()
-    record("D2-TRG-SESS", s_after > s_before and s_tok == tok1, f"updated_at {s_before} -> {s_after}")
+    cur.execute("RESET ROLE;")
+    record("D2-TRG-SESS", s_after > s_before and s_tok == tok1, f"updated_at {s_before} -> {s_after} (service_role)")
 
     cur.execute(
-        "INSERT INTO public.order_customizations (id, order_id, session_id, download_token_hash) VALUES (%s, %s, %s, %s) RETURNING updated_at;",
+        "INSERT INTO public.order_customizations (id, order_id, session_id, download_token_hash, updated_at) VALUES (%s, %s, %s, %s, now() - INTERVAL '1 hour') RETURNING updated_at;",
         (oid, ord_id, sid, tok2),
     )
     o_before = cur.fetchone()[0]
-    time.sleep(0.05)
+    cur.execute("SET LOCAL ROLE service_role;")
     cur.execute("UPDATE public.order_customizations SET render_status = 'completed' WHERE id = %s RETURNING updated_at, download_token_hash;", (oid,))
     o_after, o_tok = cur.fetchone()
-    record("D2-TRG-ORD", o_after > o_before and o_tok == tok2, f"updated_at {o_before} -> {o_after}")
+    cur.execute("RESET ROLE;")
+    record("D2-TRG-ORD", o_after > o_before and o_tok == tok2, f"updated_at {o_before} -> {o_after} (service_role)")
 
     conn.rollback()
     conn.autocommit = True
@@ -190,7 +195,7 @@ def run_tests():
 
     # D6: Rollback test
     cur.execute(read_sql(ROLLBACK_MIG_PATH))
-    cur.execute("SELECT proconfig, proacl::text FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='m13_set_updated_at';")
+    cur.execute("SELECT proconfig, ARRAY(SELECT a::text FROM unnest(proacl) AS a ORDER BY 1) FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='m13_set_updated_at';")
     rb_proconfig, rb_proacl = cur.fetchone()
     cur.execute("SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname='idx_order_customizations_session_id';")
     rb_idx_cnt = cur.fetchone()[0]
@@ -199,7 +204,7 @@ def run_tests():
     record(
         "D6-ROLLBACK",
         rb_proconfig == pre_proconfig and rb_proacl == pre_proacl and rb_idx_cnt == 0 and rb_tbl_cnt == 3,
-        f"proconfig={rb_proconfig}, idx_cnt={rb_idx_cnt}, tables={rb_tbl_cnt}",
+        f"proconfig={rb_proconfig}, acl={rb_proacl}, idx_cnt={rb_idx_cnt}, tables={rb_tbl_cnt}",
     )
     conn.close()
 
@@ -229,6 +234,7 @@ def run_tests():
         except Exception as e:
             failed = True
             err_msg = str(e).splitlines()[0]
+            curf.execute("ROLLBACK;")
         # Verify zero partial corrective changes
         curf.execute("SELECT proconfig FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='m13_set_updated_at';")
         row = curf.fetchone()
@@ -239,7 +245,7 @@ def run_tests():
         record(test_id, failed and (no_search_path or "INCOMPAT" in test_id) and (idx_c == 0 or "IDX-COLLISION" in test_id), err_msg)
 
     expect_abort("D5-01-MISSING-FUNC", "DROP FUNCTION public.m13_set_updated_at() CASCADE;")
-    expect_abort("D5-02-WRONG-SIG", "DROP FUNCTION public.m13_set_updated_at() CASCADE; CREATE FUNCTION public.m13_set_updated_at(x int) RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;")
+    expect_abort("D5-02-WRONG-SIG", "DROP FUNCTION public.m13_set_updated_at() CASCADE; CREATE FUNCTION public.m13_set_updated_at(x int) RETURNS int LANGUAGE sql AS $$ SELECT x; $$;")
     expect_abort("D5-03-WRONG-SECDEF", "ALTER FUNCTION public.m13_set_updated_at() SECURITY DEFINER;")
     expect_abort("D5-04-MISSING-TRG", "DROP TRIGGER trg_order_customizations_updated_at ON public.order_customizations;")
     expect_abort("D5-05-TRG-OTHER-FN", "CREATE FUNCTION public.other_fn() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END; $$; DROP TRIGGER trg_order_customizations_updated_at ON public.order_customizations; CREATE TRIGGER trg_order_customizations_updated_at BEFORE UPDATE ON public.order_customizations FOR EACH ROW EXECUTE FUNCTION public.other_fn();")
@@ -259,6 +265,7 @@ def run_tests():
         cur_lt.execute("SET lock_timeout = '300ms'; " + read_sql(HARDEN_MIG_PATH))
     except Exception as e:
         lt_err = str(e).splitlines()[0]
+        cur_lt.execute("ROLLBACK;")
     c_hold.rollback()
     c_hold.close()
     cur_lt.execute("SELECT proconfig FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='public' AND p.proname='m13_set_updated_at';")
