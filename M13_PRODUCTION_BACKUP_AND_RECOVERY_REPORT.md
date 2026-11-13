@@ -51,3 +51,4 @@
 * **Recommended Production Recovery Strategy:**
   - Pre-revenue / current state (`0` live customer rows): Use the verified local logical backup + `migrations/20261112_001_personalization_engine_rollback.sql` (`RESTRICT` only, zero `CASCADE`).
   - Before processing live paid customer orders in production: Upgrade to Supabase Pro (+PITR if needed) with explicit owner approval.
+

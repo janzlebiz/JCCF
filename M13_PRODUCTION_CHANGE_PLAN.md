@@ -23,3 +23,4 @@
 | **12** | **Recovery Limitations** | Free plan has no managed backups/PITR; logical backup excludes Supabase internal schemas/platform config. |
 | **13** | **Operator & Window** | Designated Migration Operator; UTC window scheduled upon explicit release. |
 | **14** | **Duration & Impact** | < 5 seconds DDL execution; zero downtime. |
+
