@@ -1,6 +1,6 @@
 # JCCF Subsystem M13 — Production Change Plan
 **Document ID:** `JCCF-M13-PROD-CHANGE-PLAN`
-**Document Version:** 1.3
+**Document Version:** 1.4
 **Date:** November 13, 2026
 **Target Project:** `JCCF` (`ammsjbcpbspisbyynaga`, `ap-northeast-2`, `PostgreSQL 17.11.0.019`)
 **Status:** Ready for Explicit Production Execution Release (Live DDL **NOT EXECUTED**)
@@ -25,59 +25,70 @@
 
 ## 2. Official Execution Mode, Timeouts & Transaction Failure Protocol
 
-### 2.1 Official Production Execution Mode: Persistent Interactive `psql` Session
+### 2.1 Official Production Execution Mode: Persistent Interactive `psql` (`\i`)
 
-**Selected Official Mode:** **Persistent Interactive `psql` Session** (sole authorized execution method; non-interactive `psql -v ON_ERROR_STOP=1` script mode is **not** used for production execution).
+**Selected Official Method:** **Persistent Interactive `psql` Session** executing the approved migration file verbatim via `\i migrations/20261112_001_personalization_engine.sql` (without `ON_ERROR_STOP=1`, so the live session never exits mid-error).
 
-* **Rationale:** In a persistent interactive `psql` session connected to `aws-1-ap-northeast-2.pooler.supabase.com:5432` (user `postgres.ammsjbcpbspisbyynaga`, `sslmode=require`), any SQL error, `lock_timeout`, or `statement_timeout` cancels only the offending statement and places the live session into PostgreSQL's `aborted` (`25P02`) transaction state without dropping the connection. The operator observes the exact error, issues an explicit `ROLLBACK;` in the same live session, and confirms clean transaction termination before any inspection. By contrast, non-interactive `psql -v ON_ERROR_STOP=1` exits immediately (`rc=3`) on error and closes the connection, relying on backend exit cleanup.
-* **Interactive Procedure:**
-  1. Connect once via persistent interactive `psql` (`sslmode=require`).
-  2. Run `SET lock_timeout = '5000ms';` and `SET statement_timeout = '30000ms';` and verify with `SHOW lock_timeout; SHOW statement_timeout;`.
-  3. Execute the contents of `migrations/20261112_001_personalization_engine.sql` (`BEGIN;` ... `COMMIT;`) once in that session.
-  4. On any error or timeout: **stop**, issue explicit `ROLLBACK;` in the same live session, confirm `ROLLBACK` output, and verify server-side cleanup (`pg_stat_activity`) before any inspection.
-  5. After `COMMIT;` succeeds, run `NOTIFY pgrst, 'reload schema';` in the same session.
+* **Exact Operator Commands:**
+  ```sql
+  SET lock_timeout = '5000ms';
+  SET statement_timeout = '30000ms';
+  SHOW lock_timeout;
+  SHOW statement_timeout;
+  \i migrations/20261112_001_personalization_engine.sql
+  ```
+* **Expected Output on Success:** `SET`, `SET`, timeout values (`5s`, `30s`), `BEGIN`, `DO` / `NOTICE` preflight lines, `CREATE TABLE` (x3), `CREATE INDEX` (x5), `ALTER TABLE` (x3), `REVOKE` / `GRANT`, and final `COMMIT`. The operator must explicitly observe `COMMIT` before running `NOTIFY pgrst, 'reload schema';`.
+* **Observed Behavior on Failure (`MFE-01`):** Any SQL error, `lock_timeout`, or `statement_timeout` cancels the failing statement and puts the session into PostgreSQL's `25P02` aborted transaction state. `psql` continues to the file's trailing `COMMIT;`, which PostgreSQL **rejects and converts to `ROLLBACK`** (printing `ROLLBACK`, never `COMMIT`). The interactive `psql` session remains open (`rc=0`), allowing the operator to issue an explicit `ROLLBACK;` (returning `WARNING: there is no transaction in progress` + `ROLLBACK`) and verify zero partial objects exist.
 
 ### 2.2 Session Timeouts (`lock_timeout` & `statement_timeout`)
-
-```sql
-SET lock_timeout = '5000ms';
-SET statement_timeout = '30000ms';
-```
 
 * **`lock_timeout = '5000ms'` (5 seconds):** Prevents queuing indefinitely behind an unexpected lock holder. Cancels only the waiting statement (`ERROR: canceling statement due to lock timeout`).
 * **`statement_timeout = '30000ms'` (30 seconds):** Caps per-statement execution time over the IPv4 session pooler. Cancels only the slow statement (`ERROR: canceling statement due to statement timeout`).
 
-### 2.3 PostgreSQL Transaction Failure Protocol & Connection-Loss Handling
+### 2.3 Transaction-State Verification Query & Protocol
 
-1. **Statement Cancellation:** `lock_timeout` or `statement_timeout` cancels only the currently running statement; it does **not** issue `ROLLBACK`.
-2. **Aborted Transaction State:** Because the migration runs inside `BEGIN;` ... `COMMIT;`, any error places the live session into `aborted` (`25P02: current transaction is aborted, commands ignored until end of transaction block`).
-3. **Explicit `ROLLBACK`:** In the persistent interactive session, the operator issues explicit `ROLLBACK;` to end the aborted transaction cleanly and discard all prior uncommitted DDL.
-4. **Connection Termination & Server-Side Cleanup:** If the connection drops or is terminated mid-transaction before `COMMIT` confirmation, the PostgreSQL backend implicitly rolls back any uncommitted or aborted transaction on exit—unless `COMMIT;` had already completed on the server before the disconnect. **Never interpret a lost connection as proof that the migration failed or succeeded.**
-5. **Mandatory Pre-Inspection / Pre-Retry Check:** Before inspecting objects or taking any further action after an error or disconnect, reconnect in a **new read-only session** and confirm zero lingering transactions remain:
-   ```sql
-   SELECT pid, state, xact_start, left(query, 100)
-   FROM pg_stat_activity
-   WHERE datname = current_database()
-     AND pid <> pg_backend_pid();
-   ```
-   Then inspect `pg_tables` (`personalization_templates`, `customization_sessions`, `order_customizations`) and `pg_proc` (`m13_set_updated_at`): either all M13 objects committed before disconnect (proceed to `PMV-01`..`PMV-11`) or `0` M13 objects exist (record incident and request owner review).
-6. **Failure Rule:** On any failure: **stop immediately**, **do not automatically retry**, and **never automatically execute rollback**.
+Before inspecting objects or taking any further action after an error, timeout, or disconnect (and during pre-execution checks), run this exact read-only query in a **new read-only session**:
 
-### 2.4 Disposable PostgreSQL 17.11 Failure Test Evidence
+```sql
+SELECT
+    pid,
+    usename,
+    application_name,
+    client_addr,
+    state,
+    xact_start,
+    wait_event_type,
+    wait_event,
+    left(query, 150) AS query_excerpt
+FROM pg_stat_activity
+WHERE datname = current_database()
+  AND pid <> pg_backend_pid()
+  AND xact_start IS NOT NULL
+ORDER BY xact_start;
+```
 
-Executed against a disposable local `PostgreSQL 17.11` cluster (port `5435`, destroyed immediately after testing; zero production impact):
+* **Required Interpretation:**
+  * `0` rows means no other session currently reports an open transaction visible to this query.
+  * Any returned row requires investigation; an `idle in transaction` session is not automatically harmless, and an active query with non-NULL `xact_start` must also be investigated.
+  * Never automatically terminate an unrelated legitimate application session, and never terminate a backend merely to make the check pass.
+* **Visibility & Limitations:**
+  * `pg_stat_activity` visibility depends on the executing role's privileges (verified on `ammsjbcpbspisbyynaga`: `postgres` is a member of `pg_monitor` and `supabase_privileged_role`, granting full session visibility; if visibility were ever insufficient, stop rather than claiming zero transactions).
+  * The query excludes the current inspection connection (`pid <> pg_backend_pid()`).
+  * A zero-row result is a point-in-time observation, not a guarantee that another session cannot begin a transaction immediately afterward (see Section 4 Schema-Change Freeze).
+* **Connection-Loss Rule:** Never interpret a lost connection as proof that the migration failed or succeeded. Reconnect read-only, run the `pg_stat_activity` query above to confirm the previous transaction ended, then inspect `pg_tables` and `pg_proc`. On any failure: **stop immediately**, **do not automatically retry**, and **never automatically execute rollback**.
 
-| Test ID | Scenario & Method | Expected Behavior | Actual Observed Behavior | Exit Code | Cleanup & Result |
+### 2.4 Disposable PostgreSQL 17.11 Validation Evidence
+
+Executed against disposable local `PostgreSQL 17.11` clusters (ports `5435`, `5436`, `5437`; destroyed immediately after testing; zero production impact):
+
+| Test ID | Scenario & Method | Expected Behavior | Actual Observed Behavior | Exit Code | Result |
 |---|---|---|---|---:|---|
-| **TFT-01** | Successful `BEGIN; CREATE TABLE t_ok; COMMIT;` with `lock_timeout=5000ms`, `statement_timeout=30000ms` | Commits cleanly; table visible | `SET`, `SET`, `BEGIN`, `CREATE TABLE`, `COMMIT`; `t_ok` (`1 row`) | `0` | Clean commit — **PASS** |
-| **TFT-02a** | Persistent interactive session: `BEGIN; CREATE TABLE t_err; SELECT 1/0; SELECT 1; ROLLBACK;` | Error enters `25P02` aborted state; explicit `ROLLBACK` discards `t_err` | `ERROR: division by zero`; `ERROR: current transaction is aborted...`; `ROLLBACK` (`t_err_count = 0`) | `0` | `0` objects remain — **PASS** |
-| **TFT-02b** | Non-interactive `psql -v ON_ERROR_STOP=1` with `SELECT 1/0;` before `COMMIT;` | Script halts immediately, closes connection; backend rolls back `t_err2` | `ERROR: division by zero`; exited immediately without `COMMIT` | `3` | `t_err2` count = `0` — **PASS** |
-| **TFT-03** | `statement_timeout = '400ms'` during `SELECT pg_sleep(2)` inside `BEGIN` | Cancels statement, enters `25P02`; explicit `ROLLBACK` discards `t_st` | `ERROR: canceling statement due to statement timeout`; `25P02`; `ROLLBACK` | `0` | `t_st_count = 0` — **PASS** |
-| **TFT-04** | `lock_timeout = '400ms'` against held `ACCESS EXCLUSIVE` lock inside `BEGIN` | Cancels DDL, enters `25P02`; explicit `ROLLBACK` discards `t_lt` | `ERROR: canceling statement due to lock timeout`; `25P02`; `ROLLBACK` | `0` | `t_lt_count = 0` — **PASS** |
-| **TFT-05** | Client process terminated mid-transaction before `COMMIT` | Backend detects EOF/disconnect and rolls back `t_int` | Client terminated; server cleaned up transaction | `1` | `t_int` count = `0` — **PASS** |
-| **TFT-06** | Server-side `pg_terminate_backend(pid)` mid-transaction before `COMMIT` | Connection lost (`FATAL: terminating connection...`); server rolls back `t_term` | `FATAL: terminating connection due to administrator command` / `connection to server was lost` | `2` | `t_term` count = `0` — **PASS** |
-| **TFT-07** | Reconnect & query `pg_stat_activity` for `state LIKE '%transaction%'` | `0` lingering active/aborted transactions | `count = 0` | `0` | Confirmed clean — **PASS** |
-| **TFT-08** | Query `pg_tables` for all failed test tables (`t_err`..`t_term`) | `(0 rows)` — zero partial objects remain | `(0 rows)` | `0` | Zero partial objects — **PASS** |
+| **TSV-01** | Open second connection with uncommitted `BEGIN; SELECT 1;` (`idle in transaction`) | Inspection query detects 1 row (`state = 'idle in transaction'`, non-NULL `xact_start`) | 1 row returned (`test_idle_in_tx`, `idle in transaction`, `xact_start` populated) | `0` | **PASS** |
+| **TSV-02** | Open active `BEGIN; SELECT pg_sleep(2);` alongside `idle in transaction` | Inspection query detects 2 rows (`active` + `idle in transaction`) | 2 rows returned (`test_idle_in_tx` + `test_active_tx_psql` `active`) | `0` | **PASS** |
+| **TSV-03** | Roll back and close both test connections cleanly | Inspection query returns `0` rows | `[]` (`0` rows returned) | `0` | **PASS** |
+| **MFE-01** | Interactive `\i fail_mig.sql` (`BEGIN; CREATE TABLE t_mig_fail; SELECT 1/0; COMMIT;`) + explicit `ROLLBACK;` | Error enters `25P02`; trailing `COMMIT` converts to `ROLLBACK`; session stays open; `t_mig_fail` absent | `ERROR: division by zero`; `ROLLBACK`; `WARNING: there is no transaction in progress` + `ROLLBACK`; `fail_tbl_count = 0` | `0` | **PASS** |
+| **MFE-02** | Interactive `\i ok_mig.sql` (`BEGIN; CREATE TABLE t_mig_ok; COMMIT;`) | Commits cleanly; `t_mig_ok` exists | `SET`, `SET`, `BEGIN`, `CREATE TABLE`, `COMMIT`; `t_mig_ok` (`1 row`), `stderr = ''` | `0` | **PASS** |
+| **TFT-01..08** | Prior PG 17.11 failure suite (`ON_ERROR_STOP=1` rc=`3`, `statement_timeout`, `lock_timeout`, client kill, `pg_terminate_backend`, cleanup) | Clean rollback on every failure; `0` partial objects | `9/9` scenarios passed (`0` partial objects, `0` lingering transactions) | `0` | **PASS** |
 
 ---
 
@@ -105,27 +116,61 @@ SELECT
 
 ---
 
-## 4. Ordered Production Operator Execution Procedure
+## 4. Production Schema-Change Freeze Procedure
 
-Execute steps in exact numerical order. If any step fails: **stop immediately**, **do not automatically retry**, **do not automatically execute rollback**, inspect actual production state using a new read-only connection, record the incident, and request owner review.
+A formal operational schema-change freeze covers the window starting **before** the final production preflight and ending **after** post-migration verification (`PMV-01`..`PMV-11`) is accepted.
 
-1. Verify repository URL (`https://github.com/janzlebiz/JCCF`), branch (`main`), and exact approved commit.
-2. Verify migration (`9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`) and rollback (`73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4`) SHA-256 values.
-3. Verify exact production project reference (`ammsjbcpbspisbyynaga`) and region (`ap-northeast-2`).
-4. Re-run live read-only preflight `PF-01` through `PF-11`.
-5. Verify production backup files and complete SHA-256 checksums in `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC`.
-6. Confirm the production state has not changed unexpectedly.
-7. Confirm zero unexpected application tables, customer data, or consumers (`pg_tables`, `auth.users`, `storage.objects`, `pg_stat_activity`).
-8. Execute the explicit `public.orders` and `public.order_customizations` precondition check (Section 3.1; both must be `NULL`).
-9. Open the official **persistent interactive `psql` session**, set and verify `lock_timeout = '5000ms'` and `statement_timeout = '30000ms'`.
-10. Confirm the exact owner authorization (`AUTHORIZE M13 PRODUCTION MIGRATION EXECUTION`) has been received.
-11. Execute `migrations/20261112_001_personalization_engine.sql` exactly once in the persistent interactive `psql` session.
-12. Confirm transaction `COMMIT` (and verify `fk_order_customizations_order` absence), then execute `PMV-01` through `PMV-11`.
-13. Verify PostgREST schema availability (`NOTIFY pgrst, 'reload schema';` + `anon` HTTP check) and produce the final production execution report.
+### 4.1 Freeze Lifecycle
+
+1. **Before Final Preflight (Freeze Initiation):**
+   * Designate the **Authorized Migration Operator** (sole operator permitted to execute DDL during the window).
+   * Identify all other administrators, developers, CI/CD deployment pipelines, scheduled jobs (`pg_cron`, Supabase CLI/Dashboard), or services capable of modifying `ammsjbcpbspisbyynaga`.
+   * Notify all relevant operators that production schema changes are frozen for the approved migration window.
+   * Pause or prohibit competing schema migrations and automated DDL deployments.
+   * Record the **Freeze Start Timestamp (UTC)** and confirm via `pg_stat_activity` (`xact_start IS NOT NULL`) that no competing schema migration is running.
+2. **During the Freeze:**
+   * Zero unrelated DDL is permitted.
+   * No other migration may create or modify `public.orders` or create `public.order_customizations`.
+   * No unrelated schema changes may be introduced into `ammsjbcpbspisbyynaga`.
+   * Do not terminate active database sessions without identifying their owners and obtaining appropriate approval.
+3. **Immediately Before Migration Execution:**
+   * Re-run read-only preflight `PF-01`..`PF-11`.
+   * Verify `public.orders` is absent (`NULL`) and `public.order_customizations` is absent (`NULL`).
+   * Verify approved migration and rollback SHA-256 hashes.
+   * Confirm the freeze remains active and record the UTC timestamp and operator identity.
+4. **After Migration & Post-Migration Verification:**
+   * Confirm expected M13 schema state (`PMV-01`..`PMV-11`).
+   * Confirm optional `fk_order_customizations_order` is absent.
+   * Record the **Freeze End Timestamp (UTC)** and release the freeze only after the owner/operator accepts the verification result.
+
+### 4.2 Important Limitation & Concurrency Detection
+
+* **Operational Control Only:** A documented freeze is an operational control, **not** a PostgreSQL-enforced lock; it does not prevent DDL by itself.
+* **Enforcement & Detection:** Competing schema changes are prevented by pausing CI/CD/admin DDL prior to the window and detected via `pg_stat_activity` (`xact_start IS NOT NULL`), `PF-01`..`PF-11` collision checks, and the pre-execution `to_regclass('public.orders')`/`to_regclass('public.order_customizations')` check. If the organization cannot enforce the freeze, the migration remains **BLOCKED**. Zero advisory locks or new database objects are introduced by this remediation task.
 
 ---
 
-## 5. Post-Migration Verification Matrix (`PMV-01` through `PMV-11`)
+## 5. Ordered Production Operator Execution Procedure
+
+Execute steps in exact numerical order. If any step fails: **stop immediately**, **do not automatically retry**, **do not automatically execute rollback**, inspect actual production state using a new read-only connection, record the incident, and request owner review.
+
+1. Initiate the **Schema-Change Freeze** (Section 4.1) and record the freeze start UTC timestamp.
+2. Verify repository URL (`https://github.com/janzlebiz/JCCF`), branch (`main`), and exact approved commit.
+3. Verify migration (`9D6579BC93842C57E3EA03C93F3802CF2D89C5A5F0DB6D81D64A3826BF148B6E`) and rollback (`73725DF9716772A355EC159117F2DD68DB5720C00B1F2C5AB967A13C63EF10F4`) SHA-256 values.
+4. Verify exact production project reference (`ammsjbcpbspisbyynaga`) and region (`ap-northeast-2`).
+5. Re-run live read-only preflight `PF-01` through `PF-11` and the `pg_stat_activity` open-transaction check (Section 2.3).
+6. Verify production backup files and complete SHA-256 checksums in `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC`.
+7. Confirm the production state has not changed unexpectedly (`0` unexpected tables, `0` customer data, `0` active consumers).
+8. Execute the explicit `public.orders` and `public.order_customizations` precondition check (Section 3.1; both must be `NULL`).
+9. Open the official **persistent interactive `psql` session**, set and verify `lock_timeout = '5000ms'` and `statement_timeout = '30000ms'`.
+10. Confirm the exact owner authorization (`AUTHORIZE M13 PRODUCTION MIGRATION EXECUTION`) has been received and the freeze remains active.
+11. Execute `\i migrations/20261112_001_personalization_engine.sql` once in the persistent interactive `psql` session.
+12. Confirm transaction `COMMIT` (and verify `fk_order_customizations_order` absence), then execute `PMV-01` through `PMV-11`.
+13. Verify PostgREST schema availability (`NOTIFY pgrst, 'reload schema';` + `anon` HTTP check), produce the final execution report, and release the freeze after owner/operator acceptance.
+
+---
+
+## 6. Post-Migration Verification Matrix (`PMV-01` through `PMV-11`)
 
 Every check below must pass before declaring production deployment verified.
 
