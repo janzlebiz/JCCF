@@ -1,54 +1,71 @@
 # JCCF Subsystem M13 — Production State Inspection Report (Read-Only)
-**Document ID:** `JCCF-M13-PROD-STATE-INSPECTION`  
-**Document Version:** 1.0  
-**Date:** November 13, 2026  
-**Inspection Timestamp (UTC):** `2026-11-13T02:57:37.803171+00:00`  
-**Repository:** `https://github.com/janzlebiz/JCCF` (`main` @ `0ecabfbc91ed97799952af1c2675d3f745c20aff`)  
-**Target Environment:** **JCCF Production Supabase Project** (`ammsjbcpbspisbyynaga`)  
+**Document ID:** `JCCF-M13-PROD-STATE-INSPECTION`
+**Document Version:** 1.1
+**Date:** November 13, 2026
+**Initial Inspection Timestamp (UTC):** `2026-11-13T02:57:37.803171+00:00`
+**Fresh Reconfirmation Timestamp (UTC):** `2026-11-13T03:27:17.355102+00:00`
+**Repository:** `https://github.com/janzlebiz/JCCF` (`main` @ `0a1b9c9f486f32c8404a6ca2b54e8d121fa2e9ee`)
+**Target Environment:** **JCCF Production Supabase Project** (`ammsjbcpbspisbyynaga`)
 **Authorization Status:** Read-Only Inspection Complete; Live Production DDL **NOT EXECUTED**
 
 ---
 
-## 1. C1: Production Project Identity Verification
+## 1. Production Project Identity Verification
 
 | Property | Observed Value | Source |
 |---|---|---|
-| **Project Name** | `JCCF` | `npx supabase projects list` |
-| **Project Reference** | `ammsjbcpbspisbyynaga` | `npx supabase projects list` |
-| **Organization ID** | `fpyqttksvcgqjuuipfei` | `npx supabase projects list` |
-| **Region** | `ap-northeast-2` | `npx supabase projects list` |
-| **Project Status** | `ACTIVE_HEALTHY` | `npx supabase projects list` |
-| **Supabase Engine** | `17.11.0.019` (`postgres_engine: 17`, `ga`) | `npx supabase projects list` |
-| **PostgreSQL `version()`** | `PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit` | Read-only SQL over IPv4 Session Pooler |
-| **Database / Role** | `current_database() = postgres`, `current_user = postgres`, `session_user = postgres` | Read-only SQL (`aws-1-ap-northeast-2.pooler.supabase.com:5432`) |
-| **Project Isolation** | Verified distinct from unrelated project `jgpigkeekfuawbyilycq` (`Agila-Hub-BEEC`, `ap-northeast-1`) | `npx supabase projects list` |
+| **Project Name** | `JCCF` | `npx supabase projects list --output json` |
+| **Project Reference** | `ammsjbcpbspisbyynaga` | `npx supabase projects list --output json` |
+| **Organization ID** | `fpyqttksvcgqjuuipfei` | `npx supabase projects list --output json` |
+| **Region** | `ap-northeast-2` | `npx supabase projects list --output json` |
+| **Project Status** | `ACTIVE_HEALTHY` | `npx supabase projects list --output json` |
+| **Supabase Engine** | `17.11.0.019` (`postgres_engine: 17`, `ga`) | `npx supabase projects list --output json` |
+| **PostgreSQL `version()`** | `PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit` | Read-only SQL (`2026-11-13T03:27:17.355102+00:00`) |
+| **Database / Role** | `current_database() = postgres`, `current_user = postgres`, `inet_server_port = 5432` | Read-only SQL (`aws-1-ap-northeast-2.pooler.supabase.com:5432`) |
+| **Project Isolation** | Verified distinct from unrelated project `jgpigkeekfuawbyilycq` (`Agila-Hub-BEEC`, `ap-northeast-1`) | `npx supabase projects list --output json` |
 
 ---
 
-## 2. C2: Existing Production Data, Schema & Dependencies
+## 2. Existing Production Data, Schema, Dependencies & Active Consumers
 
-| Inspection Area | Observed Production State |
+| Inspection Area | Observed Production State (`2026-11-13T03:27:17.355102+00:00`) |
 |---|---|
-| **Non-System Schemas** | `auth`, `extensions`, `graphql`, `graphql_public`, `public`, `realtime`, `storage`, `vault` |
 | **Public Tables** | `0` tables (`[]` — `products`, `orders`, and all 3 M13 tables do not exist) |
 | **Public Functions** | `1` platform function: `public.rls_auto_enable()` (`m13_set_updated_at` absent) |
 | **Public Triggers** | `0` non-internal triggers |
-| **Event Triggers** | `7` Supabase platform event triggers (`ensure_rls`, `issue_graphql_placeholder`, `issue_pg_cron_access`, `issue_pg_graphql_access`, `issue_pg_net_access`, `pgrst_ddl_watch`, `pgrst_drop_watch`) |
 | **Public RLS Policies** | `0` policies |
-| **Key Roles** | `anon`, `authenticated`, `authenticator` (`LOGIN`), `postgres` (`BYPASSRLS`, `LOGIN`), `service_role` (`BYPASSRLS`), `supabase_admin` (`SUPERUSER`) |
 | **Auth Users** | `0` rows in `auth.users` |
 | **Storage Buckets / Objects** | `0` buckets in `storage.buckets`; `0` objects in `storage.objects` |
 | **Installed Extensions** | `pg_stat_statements (1.11)`, `pgcrypto (1.3)`, `plpgsql (1.0)`, `supabase_vault (0.3.2)`, `uuid-ossp (1.1)` |
-| **Application Consumers** | `0` deployed application endpoints or `.env*` files in repo; D5 Phase 1 engineering authorized separately, deployment NOT authorized |
+| **Active Database Sessions (`pg_stat_activity`)** | Only 6 Supabase infrastructure sessions (`authenticator` / `PostgREST 14.18` `LISTEN "pgrst"`, `supabase_admin` / `postgres_exporter`, `pgbouncer`, `pgbouncer` / `Supavisor (auth_query)`, `supabase_admin` / `pg_cron scheduler`, `postgres` / `pg_net 0.20.4 worker`). **`0` application or customer sessions.** |
+| **Application Consumers** | `0` deployed application endpoints; D5 Phase 1 engineering authorized separately, deployment and live integration `NOT AUTHORIZED`. |
 
 ---
 
-## 3. C3: Production Impact Analysis
+## 3. Fresh Live Read-Only Preflight Results (`PF-01` through `PF-11`)
 
-* **Table Locking / Traffic Blocking:** Zero impact. None of `personalization_templates`, `customization_sessions`, or `order_customizations` exist yet (`0` public tables, `0` live traffic).
-* **Data Rewrite / Invalidation:** Zero risk. No existing application rows exist (`0` public tables, `0` Auth users, `0` Storage objects).
+Executed in a read-only transaction (`readonly=True, autocommit=True`) against `ammsjbcpbspisbyynaga` via `aws-1-ap-northeast-2.pooler.supabase.com:5432`:
+
+| Check | Description | UTC Timestamp | Observed Result | Status |
+|---|---|---|---|---|
+| **PF-01** | PostgreSQL version >= 15 | `2026-11-13T03:27:18.691693+00:00` | `PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit` | **PASS** |
+| **PF-02** | `gen_random_uuid()` available | `2026-11-13T03:27:18.820879+00:00` | `ecec8a60-bf95-4b13-9658-91b0678465ce` | **PASS** |
+| **PF-03** | Required PostgREST roles exist | `2026-11-13T03:27:18.950220+00:00` | `anon`, `authenticated`, `service_role` | **PASS** |
+| **PF-04** | No `public.m13_set_updated_at()` collision | `2026-11-13T03:27:19.083968+00:00` | `0` | **PASS** |
+| **PF-05** | No M13 table collisions | `2026-11-13T03:27:19.214635+00:00` | `[]` (`0` collisions) | **PASS** |
+| **PF-06** | No M13 trigger collisions | `2026-11-13T03:27:19.345920+00:00` | `[]` (`0` collisions) | **PASS** |
+| **PF-07** | No M13 policy collisions | `2026-11-13T03:27:19.475090+00:00` | `[]` (`0` collisions) | **PASS** |
+| **PF-08** | Optional `public.products` table check | `2026-11-13T03:27:19.603895+00:00` | `0` (absent; optional FK safely skipped) | **PASS** |
+| **PF-09** | Optional `public.orders` table check | `2026-11-13T03:27:19.735965+00:00` | `0` (absent; optional FK safely skipped) | **PASS** |
+| **PF-10** | No M13 index collisions | `2026-11-13T03:27:19.864536+00:00` | `[]` (`0` collisions) | **PASS** |
+| **PF-11** | Database & schema writable capability | `2026-11-13T03:27:19.998134+00:00` | `postgres`, `postgres`, `CREATE` on `public` = `true`, `CREATE` on DB = `true` | **PASS** |
+
+---
+
+## 4. Production Impact Analysis
+
+* **Table Locking / Traffic Blocking:** Minimal expected impact (`0` existing public tables, `0` active application consumers).
+* **Data Rewrite / Invalidation:** Zero risk under current empty state (`0` public tables, `0` Auth users, `0` Storage objects).
 * **Index Safety:** All indexes are created inside the initial table-creation transaction on newly created empty tables.
 * **Foreign-Key Dependencies:** `public.products` and `public.orders` do not exist; migration SQL safely skips optional external FKs and activates the 2 internal M13 FKs (`customization_sessions_template_id_fkey`, `order_customizations_session_id_fkey`), matching verified scenario `PG-INT-19`.
-* **Downtime Requirement:** None (`0` active consumers).
-* **Verdict:** **PASS — ZERO PRODUCTION DATA OR DEPENDENCY CONFLICTS.**
-
+* **Verdict:** **PASS — ZERO PRODUCTION DATA, CONSUMER, OR DEPENDENCY CONFLICTS.**

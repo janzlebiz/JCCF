@@ -1,27 +1,28 @@
 # JCCF Subsystem M13 — Production Backup and Recovery Report
-**Document ID:** `JCCF-M13-PROD-BACKUP-RECOVERY`  
-**Document Version:** 1.0  
-**Date:** November 13, 2026  
-**Target Environment:** **JCCF Production Supabase Project** (`ammsjbcpbspisbyynaga`, `ap-northeast-2`, `PostgreSQL 17.11`)  
-**Status:** Fresh Production Recovery Point Captured & Verified on PostgreSQL 17.11
+**Document ID:** `JCCF-M13-PROD-BACKUP-RECOVERY`
+**Document Version:** 1.1
+**Date:** November 13, 2026
+**Target Environment:** **JCCF Production Supabase Project** (`ammsjbcpbspisbyynaga`, `ap-northeast-2`, `PostgreSQL 17.11`)
+**Status:** Fresh Production Recovery Point Captured, Manifest-Verified, & Restore-Tested on PostgreSQL 17.11
 
 ---
 
-## 1. Fresh Production Recovery Point (Phase D1)
+## 1. Fresh Production Recovery Point & Complete Verification Manifest
 
 * **Backup Directory (Outside Git):** `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC`
 * **Capture Window (UTC):** `2026-11-13T03:03:12.412693+00:00` $\rightarrow$ `2026-11-13T03:04:02.578312+00:00`
 * **Connection Method:** IPv4 Session Pooler (`aws-1-ap-northeast-2.pooler.supabase.com:5432`, user `postgres.ammsjbcpbspisbyynaga`, `sslmode=require`, local `%APPDATA%\postgresql\pgpass.conf`).
 * **Dump Tooling:** `pg_dump (PostgreSQL) 17.11` and `pg_dumpall (PostgreSQL) 17.11` using Supabase CLI `3.1.0` schema/table exclusion lists.
-* **Execution Result:** `roles=0`, `schema=0`, `data=0` (`0` warnings/errors).
+* **Dump Return Codes:** `roles=0`, `schema=0`, `data=0` (`0` stderr warnings/errors).
+* **Re-verification Timestamp (UTC):** `2026-11-13T03:26:12+00:00` (all 5 files readable; all SHA-256 checksums re-hashed and verified).
 
-| Artifact | Size (Bytes) | SHA-256 Checksum | Contents |
-|---|---|---|---|
-| `roles.sql` | `6301` | `F86A00F97E6FD712EFBA0FC28A86A8BA205E3A0A037B9CE55E2B11C6FBBE6BDB` | Cluster roles (`--roles-only --no-role-passwords`) |
-| `schema.sql` | `39515` | `7CE743085F704C9F1D5683ECB3D7B8C75DCA2D2514A407172BE647EDBF99F6BB` | `public` schema DDL & extensions (`--schema-only`) |
-| `data.sql` | `4750` | `1B0F32E27FC3B63A89169ECA2396603EE7F6604BF5E4F0AA088A8DCBC70CF77A` | `0` application rows (`auth.refresh_tokens_id_seq` setval only) |
-| `backup_metadata.json` | — | Recorded in `checksums.sha256` | Capture telemetry & exclusions (`0` secrets) |
-| `checksums.sha256` | — | — | SHA-256 manifest |
+| Filename | Exact Full Path | Byte Size | Complete SHA-256 | Capture Time (UTC) | Checksum Verification | Restore-Test Result |
+|---|---|---:|---|---|---|---|
+| `roles.sql` | `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC\roles.sql` | `6301` | `F86A00F97E6FD712EFBA0FC28A86A8BA205E3A0A037B9CE55E2B11C6FBBE6BDB` | `2026-11-13T03:03:12+00:00`–`03:04:02+00:00` | **MATCH** (`checksums.sha256` + `Get-FileHash`) | **PASS** (`RC=0`, roles restored) |
+| `schema.sql` | `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC\schema.sql` | `39515` | `7CE743085F704C9F1D5683ECB3D7B8C75DCA2D2514A407172BE647EDBF99F6BB` | `2026-11-13T03:03:12+00:00`–`03:04:02+00:00` | **MATCH** (`checksums.sha256` + `Get-FileHash`) | **PASS** (`RC=0`, schema/extensions restored) |
+| `data.sql` | `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC\data.sql` | `4750` | `1B0F32E27FC3B63A89169ECA2396603EE7F6604BF5E4F0AA088A8DCBC70CF77A` | `2026-11-13T03:03:12+00:00`–`03:04:02+00:00` | **MATCH** (`checksums.sha256` + `Get-FileHash`) | **PASS** (`RC=0`, 0 app rows verified) |
+| `backup_metadata.json` | `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC\backup_metadata.json` | `1139` | `554CEB2D4E844B9812A1D7366E788A7276E0A6072636D9D76CF338E37DE44F74` | `2026-11-13T03:04:02+00:00` | **MATCH** (`checksums.sha256` + `Get-FileHash`) | N/A (metadata manifest) |
+| `checksums.sha256` | `D:\JCCF_SECURE_BACKUPS\M13\prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC\checksums.sha256` | `319` | `D2F2B0314FBAD649E666B012FA7BE26EF3530A1BF4E086D4546F7F2FC281BC14` | `2026-11-13T03:04:02+00:00` | **VERIFIED** (`Get-FileHash`) | N/A (checksum manifest) |
 
 *(Historical reference: earlier pre-transition backup `D:\JCCF_SECURE_BACKUPS\M13\staging_backup_ammsjbcpbspisbyynaga_20261113_022827_UTC` is retained as historical audit evidence only and superseded by `prod_backup_ammsjbcpbspisbyynaga_20261113_030312_UTC`.)*
 
@@ -40,15 +41,15 @@
 
 ---
 
-## 3. Supabase Platform Recovery & Explicit Limitations (Phase D2)
+## 3. Supabase Platform Recovery & Explicit Limitations
 
 * **Supabase Plan Status:** Free tier (`ammsjbcpbspisbyynaga`). Managed daily physical backups and Point-in-Time Recovery (PITR) are **not available** on the Free plan. No paid plan upgrade is authorized without owner approval.
 * **Logical Backup Limitations (Explicit):**
   1. A local logical PostgreSQL dump is **not** a complete Supabase platform backup.
-  2. Supabase-managed internal schemas (`auth`, `storage`, `realtime`, `vault`, `extensions`, `pgsodium`, `supabase_migrations`, etc.) and platform configuration (API keys, JWT secret, Auth providers, Edge Functions, Storage policies) are excluded or platform-managed.
+  2. Supabase-managed internal schemas (`auth`, `storage`, `realtime`, `vault`, `extensions`, `pgsodium`, `supabase_migrations`, etc.) and platform configuration (API keys, JWT secret, Auth providers, Edge Functions, Storage policies, project settings) are excluded or platform-managed.
   3. Vanilla PostgreSQL 17.11 restoration cannot reproduce Supabase-managed platform components (`supabase_vault`, `extensions.pgrst_*`, `extensions.grant_pg_*`).
   4. Auth and Storage require separate export/recovery procedures once user data or objects exist (currently `0` Auth users, `0` Storage buckets, `0` Storage objects).
+  5. Logical dumps represent a single-point-in-time snapshot; there is zero continuous WAL/PITR recovery between dump time and any subsequent write.
 * **Recommended Production Recovery Strategy:**
-  - Pre-revenue / current state (`0` live customer rows): Use the verified local logical backup + `migrations/20261112_001_personalization_engine_rollback.sql` (`RESTRICT` only, zero `CASCADE`).
+  - Pre-revenue / current state (`0` live customer rows): Use the verified local logical backup + `migrations/20261112_001_personalization_engine_rollback.sql` (`RESTRICT` only, zero `CASCADE`), only after manual operator inspection.
   - Before processing live paid customer orders in production: Upgrade to Supabase Pro (+PITR if needed) with explicit owner approval.
-
