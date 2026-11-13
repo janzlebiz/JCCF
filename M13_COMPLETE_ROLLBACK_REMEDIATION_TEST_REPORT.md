@@ -60,3 +60,4 @@
 - `TIMEOUT-04`: Long-running statement without harness timeout aborts via SQL `statement_timeout` (`pgcode=57014, elapsed=30.04s, prov=None, err=canceling statement due to statement timeout`) (`PASS`).
 - `TIMEOUT-05`: `SET LOCAL` settings do not persist into subsequent transactions (`lock_timeout: 0->0, statement_timeout: 0->0`) (`PASS`).
 - `RLS-AUTO-ENABLE-EVENT-TRIGGER`: Simulated `rls_auto_enable()` `ddl_command_end` event trigger compatibility verified across full forward and reverse sequence (`rls_on=True, evt_preserved=1`) (`PASS`).
+

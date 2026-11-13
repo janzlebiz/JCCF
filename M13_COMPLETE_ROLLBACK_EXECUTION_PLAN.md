@@ -24,3 +24,4 @@ Do **NOT** execute `20261113_1335_m13_production_hardening.sql`, `20261113_1335_
    - Rollback (only if separately authorized): `\i migrations/20261113_2345_m13_hardening_and_provenance_rollback.sql`
 4. Both scripts enforce `SET LOCAL lock_timeout = '5s';` and `SET LOCAL statement_timeout = '30s';` inside `BEGIN; ... COMMIT;`. On any abort, verify transaction cleanup before inspecting or retrying.
 5. If `20261113_2345_rollback` preserves an unowned residual `idx_order_customizations_session_id` (e.g., created earlier by historical `1335` or manually by an operator), retain it for explicit manual review.
+

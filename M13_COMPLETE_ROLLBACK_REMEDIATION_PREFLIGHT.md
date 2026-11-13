@@ -28,3 +28,4 @@ The baseline commit `917ae27f946073fd1cd195edc431be8aae397ac4` was verified on `
 2. **Test Report vs. Code Mismatch:** `RP-08` previously only dropped/recreated the index rather than dropping and recreating `public.order_customizations` to prove `table_oid` mismatch. Replaced with genuine table drop/recreate verification in `tests/test_m13_complete_rollback_chain_postgres.py`.
 3. **Incomplete Sequence Testing:** Previous sequence tests skipped `1335` rollback and `001` rollback. New `SEQ-01` through `SEQ-07` execute the complete forward and reverse sequence including `20261113_2345` rollback and `20261112_001` rollback.
 4. **SQL-Enforced Timeouts:** `SET LOCAL lock_timeout = '5s';` and `SET LOCAL statement_timeout = '30s';` are now explicitly enforced inside the `BEGIN; ... COMMIT;` blocks of both `20261113_2345` SQL files and verified by `TIMEOUT-01` through `TIMEOUT-05`.
+

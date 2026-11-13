@@ -21,3 +21,4 @@
 - **Pre-existing exact-name or equivalent index:** `20261113_2345_m13_hardening_and_provenance.sql` preserves it and records zero provenance. `20261113_2345_m13_hardening_and_provenance_rollback.sql` preserves it on rollback.
 - **Database where historical `20261113_1335_m13_production_hardening.sql` was already applied:** `20261113_2345` observes the existing index, does not retroactively claim ownership, and `20261113_2345_rollback` preserves the unowned index as a residual object requiring manual review (`SEQ-04`).
 - **Clean database where `20261113_2345` creates the index:** `20261113_2345` records atomic OID + definition provenance, and `20261113_2345_rollback` safely drops the owned index and metadata (`SEQ-01`).
+

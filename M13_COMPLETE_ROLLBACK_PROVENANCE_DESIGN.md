@@ -36,3 +36,4 @@ When `20261113_2345_m13_hardening_and_provenance.sql` runs:
    - Recorded `index_oid` does not exist in `pg_class` / `pg_index` (or was dropped/recreated).
    - Live schema, index name, `indrelid`, or `pg_get_indexdef(index_oid)` differs from recorded values.
 5. Drops `public.idx_order_customizations_session_id` (without `CASCADE`) and deletes only its own provenance row when all checks pass, dropping `m13_internal` only if zero provenance rows remain.
+

@@ -14,3 +14,4 @@ The following historical SQL artifacts remain preserved in Git history and on di
 **Superseding Replacement Pair:**
 - `migrations/20261113_2345_m13_hardening_and_provenance.sql` (`SHA-256: 047C1C916CE48825D0516304F060C33488EC2F75D6869315572EF35478619BEA`)
 - `migrations/20261113_2345_m13_hardening_and_provenance_rollback.sql` (`SHA-256: CE707D18B9A69B1E9A4806D3190935280909164081E405B1C7032405A5A51D8C`)
+
