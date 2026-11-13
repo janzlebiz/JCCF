@@ -9,12 +9,15 @@ on:
 
 jobs:
   postgres-verification:
-    name: PostgreSQL 15+ Migration & Rollback Integration
+    name: PostgreSQL ${{ matrix.postgres-version }} Integration
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres-version: ['15-alpine', '17-alpine']
 
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:${{ matrix.postgres-version }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword123
@@ -50,7 +53,7 @@ jobs:
       - name: Run Static SQL & AST Scenarios Suite
         run: python tests/test_migration_scenarios.py
 
-      - name: Run Real PostgreSQL 15+ Integration Suite
+      - name: Run Real PostgreSQL Integration Suite
         env:
           PGHOST: localhost
           PGPORT: 5432

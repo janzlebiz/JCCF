@@ -35,9 +35,12 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 | **Acceptance Checklist** | `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | Current HEAD | Future staging operational gate (E1–E6) |
 | **Final Decision Package** | `M13_DECISION_4_FINAL_PACKAGE.md` | Current HEAD | Definitive Owner Decision 4 authorization package |
 | **Decision Clarification** | `M13_D4_OWNER_DECISION_CLARIFICATION.md` | Current HEAD | Targeted evidence reconciliation for Decision 4 |
+| **D4 Local Backup Report** | `M13_D4_LOCAL_BACKUP_REPORT.md` | Current HEAD | Local logical backup strategy & CLI/IPv6 blocker report |
+| **PG 17 Compatibility** | `M13_POSTGRESQL_17_COMPATIBILITY_REPORT.md` | Current HEAD | PostgreSQL 17.11/17.12 compatibility & 26/26 verification |
+| **D4 Stage B Readiness** | `M13_D4_STAGE_B_READINESS.md` | Current HEAD | Stage B operator release gates (E1–E6) for PG 17 |
 | **Integration Suite**| `tests/test_migration_postgres_integration.py` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | 26 automated PostgreSQL integration tests |
 | **Scenario Suite** | `tests/test_migration_scenarios.py` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | 12 AST/Catalog logic scenario tests |
-| **CI Workflow** | `.github/workflows/postgres_verification.yml` | `f9a4eb3fc2fd6b5a1645b8c962e51596758a9ed4` | Automated GitHub Actions CI pipeline |
+| **CI Workflow** | `.github/workflows/postgres_verification.yml` | Current HEAD | Dual-baseline CI pipeline (PG 15 & PG 17) |
 
 ---
 
@@ -68,16 +71,19 @@ This document performs an exhaustive cross-reference and integrity audit of the 
 | `M13_STAGE_4_MIGRATION_SCOPE_INVENTORY.md` | `A1F5128897700F5EE26DE89B0D183F3C32189970C735503E1E151C1B67C6EEF8` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_STAGE_4_SUPABASE_COMPATIBILITY_MATRIX.md` | `66A3767710EA78A4E2DA8AD9516EF72C242782070E5609149DEDFC0F3AD2AE77` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_STAGE_4_EXECUTION_AND_ROLLBACK_RUNBOOK.md` | `71B01C0310962920FA829CFDD2FD4AB2D9D905E9ECF6D562A6CF0C28F7B58945` | `759bac0` | **Governing** | Unchanged (Stable) |
-| `M13_STAGE_4_EVIDENCE_REGISTER.md` | `048A84C422CA6DA98D98B3328723B4278E9FC21EF6B9D06D53272B24F453658D` | Current HEAD | Reference | Reconciled (EV-M13-19 added) |
+| `M13_STAGE_4_EVIDENCE_REGISTER.md` | `EC6B3FB858E3E618E37874BF32A8913A99C336E643DBAC4BEED5DB991BBE719B` | Current HEAD | Reference | Reconciled (EV-M13-20..22 & PG 17.11) |
 | `M13_STAGE_4_OWNER_AUTHORIZATION_PACKAGE.md` | `C0AB3F9AE826C9F3D1802500B2C729495251AF430B6CD269DCB18AFBD0F91570` | `759bac0` | Reference | Unchanged (Stable) |
 | `M13_SUPABASE_COMPATIBILITY_REVIEW.md` | `57872C870672A5E15700C5EB71F329B19162601C09BFC1A67AFB3F959007EABC` | Current HEAD | **Governing** | Reconciled (v1.1) |
 | `M13_BACKUP_RECOVERY_READINESS.md` | `41A6292CB1898111295A8E0599996DC4AFFBFFEA66ED075B2A73E0DD2EC4F6DC` | Current HEAD | **Governing** | Reconciled (v1.1) |
 | `M13_PRE_EXECUTION_GAP_REGISTER.md` | `2A7F24392BED0EA44BCE59F1C9DE91BCF445FFE6C4937CAEEAFCEE5964878521` | Current HEAD | **Governing** | Reconciled (v1.1) |
 | `M13_STAGING_EXECUTION_ACCEPTANCE_CHECKLIST.md` | `B8D6430557EBB6FCC8BC2063895EA86F1D27FCF93538353B55F48DE413530E3B` | Current HEAD | **Governing** | Reconciled (v1.1) |
 | `M13_D4_OWNER_DECISION_CLARIFICATION.md` | `3A4017F09EC24698821C1B8D408121634A3ECACAEDDAF286929D5697FD735717` | Current HEAD | **Governing** | Newly Added (TC-01..06) |
+| `M13_D4_LOCAL_BACKUP_REPORT.md` | `150663F486CC627550DEB94ABD601D4CA67F6BB1BD0D7A98644D19B12C22C41E` | Current HEAD | **Governing** | Newly Added (PG 17 & Backup Prep) |
+| `M13_POSTGRESQL_17_COMPATIBILITY_REPORT.md` | `90CFE6A3AC5EF53EA63FBE03CC43B31CFA697FCE57AFE2EE697BD01DE93CFE6A` | Current HEAD | **Governing** | Newly Added (PG 17.11 26/26 PASS) |
+| `M13_D4_STAGE_B_READINESS.md` | `11F2A4E0506FC4E85B4ACE65A792AB67F13D929F89CCA8E80AB173F1A12CB5D8` | Current HEAD | **Governing** | Newly Added (Stage B E1–E6 Gates) |
 | `tests/test_migration_postgres_integration.py` | `0A44F87AB76F571E568FB24BED65BB79C088F0FE743A65B3F2CF04905A77D018` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
 | `tests/test_migration_scenarios.py` | `56CA02D05D26BEF19573C05873081C621C7693C897E645B1FF788D334B72BA49` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
-| `.github/workflows/postgres_verification.yml` | `ED7C7BA77E43CC9DE1CADA44FA8B1B4E4B4E3BBC78D534EDD920CA7A1EFA637F` | `f9a4eb3` | **Governing** | Unchanged (Stable) |
+| `.github/workflows/postgres_verification.yml` | `7D0849D5DD255F19BB1F6C4B59488F4F27D83E60B2601B22BAC9435992A25A5D` | Current HEAD | **Governing** | Updated (Dual PG 15 & PG 17 Matrix) |
 
 ---
 
